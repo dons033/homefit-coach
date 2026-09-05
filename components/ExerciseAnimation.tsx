@@ -1,9 +1,28 @@
 "use client";
 
-/* Reusable procedural stick-figure demos. Loops continuously, slow enough to follow.
-   Usage: <ExerciseAnimation exerciseId="bench-press" className="..." />
-   No video files. Respects prefers-reduced-motion via CSS (animation: none).
-*/
+import type { CSSProperties } from "react";
+
+/* Procedural stick-figure demos. One animation loop = one rep; tempo comes
+ * from --rep-dur (work seconds ÷ target reps, set via repSeconds prop).
+ * Start/end frames draw IDENTICAL geometry — the second runs half a rep out
+ * of phase (hf-phase-b), so the pair always shows opposite ends of the rep.
+ *
+ * Rotational pivots use explicit view-box coordinates (transform-box:
+ * view-box + transform-origin in px) so elbows/shoulders stay pinned.
+ * Bounding-box origins drift when the dumbbell rect widens the box —
+ * never use fill-box origins here.
+ *
+ * LONG-RUN SPRITE PATH (Krita):
+ *   1. Draw N equal frames in a horizontal strip, transparent PNG.
+ *   2. Save as public/sprites/<exercise-id>.png (suggested 480px/frame).
+ *   3. Register the frame count in SPRITE_FRAMES below.
+ *   The sprite renders automatically with stepped timing on the same
+ *   --rep-dur tempo; unregistered ids keep the SVG figure. Nothing else changes.
+ */
+
+const SPRITE_FRAMES: Record<string, number> = {
+  // "bench-press": 10,
+};
 
 const INK = "#e2e8f0";
 const DIM = "#64748b";
@@ -30,200 +49,186 @@ function Dumbbell({ x, y }: { x: number; y: number }) {
   );
 }
 
+/** Pair wrapper: same pose twice, second half a rep out of phase. */
+function Pair({
+  startLabel,
+  endLabel,
+  baseClass,
+  pose,
+}: {
+  startLabel: string;
+  endLabel: string;
+  baseClass: string;
+  pose: (groupClass: string) => React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-center gap-6">
+      <Frame label={startLabel}>{pose(baseClass)}</Frame>
+      <Frame label={endLabel}>{pose(`${baseClass} hf-phase-b`)}</Frame>
+    </div>
+  );
+}
+
+/* ---------------- Bench press: flat back, bells chest ↔ overhead ---------------- */
 function BenchPressAnim() {
-  return (
-    <div className="flex flex-wrap items-end justify-center gap-6">
-      {/* Start: bar at chest */}
-      <Frame label="Start">
-        {/* bench */}
-        <rect x={20} y={110} width={120} height={10} rx={2} fill={DIM} />
-        <rect x={30} y={120} width={8} height={35} fill={DIM} />
-        <rect x={122} y={120} width={8} height={35} fill={DIM} />
-        {/* body */}
-        <ellipse cx={85} cy={100} rx={38} ry={12} fill="none" stroke={INK} strokeWidth={3} />
-        <circle cx={45} cy={88} r={9} fill="none" stroke={INK} strokeWidth={3} />
-        <line x1={120} y1={100} x2={140} y2={125} stroke={INK} strokeWidth={3} strokeLinecap="round" />
-        <line x1={140} y1={125} x2={140} y2={155} stroke={INK} strokeWidth={3} strokeLinecap="round" />
-        {/* arms bent, bells at chest */}
-        <g className="hf-anim-press">
-          <line x1={80} y1={100} x2={70} y2={78} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <line x1={70} y1={78} x2={82} y2={66} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <line x1={100} y1={100} x2={110} y2={78} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <line x1={110} y1={78} x2={98} y2={66} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={82} y={60} />
-          <Dumbbell x={98} y={60} />
-        </g>
-      </Frame>
-      {/* End: pressed up */}
-      <Frame label="Press up">
-        <rect x={20} y={110} width={120} height={10} rx={2} fill={DIM} />
-        <rect x={30} y={120} width={8} height={35} fill={DIM} />
-        <rect x={122} y={120} width={8} height={35} fill={DIM} />
-        <ellipse cx={85} cy={100} rx={38} ry={12} fill="none" stroke={INK} strokeWidth={3} />
-        <circle cx={45} cy={88} r={9} fill="none" stroke={INK} strokeWidth={3} />
-        <line x1={120} y1={100} x2={140} y2={125} stroke={INK} strokeWidth={3} strokeLinecap="round" />
-        <line x1={140} y1={125} x2={140} y2={155} stroke={INK} strokeWidth={3} strokeLinecap="round" />
-        <g className="hf-anim-press hf-phase-b">
-          <line x1={82} y1={100} x2={82} y2={55} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <line x1={102} y1={100} x2={102} y2={55} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={82} y={45} />
-          <Dumbbell x={102} y={45} />
-        </g>
-      </Frame>
-    </div>
+  const pose = (cls: string) => (
+    <>
+      <rect x={20} y={110} width={120} height={10} rx={2} fill={DIM} />
+      <rect x={30} y={120} width={8} height={35} fill={DIM} />
+      <rect x={122} y={120} width={8} height={35} fill={DIM} />
+      <ellipse cx={85} cy={100} rx={38} ry={12} fill="none" stroke={INK} strokeWidth={3.5} />
+      <circle cx={45} cy={88} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
+      <line x1={120} y1={100} x2={140} y2={125} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
+      <line x1={140} y1={125} x2={140} y2={155} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
+      <g className={cls}>
+        <line x1={84} y1={98} x2={74} y2={78} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <line x1={74} y1={78} x2={80} y2={58} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <line x1={104} y1={98} x2={114} y2={78} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <line x1={114} y1={78} x2={108} y2={58} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={80} y={52} />
+        <Dumbbell x={108} y={52} />
+      </g>
+    </>
   );
+  return <Pair startLabel="Chest" endLabel="Press up" baseClass="hf-anim-press" pose={pose} />;
 }
 
+/* ---------------- One-arm row: flat back like a table, hang ↔ hip ---------------- */
 function RowAnim() {
-  return (
-    <div className="flex flex-wrap items-end justify-center gap-6">
-      <Frame label="Hang">
-        <rect x={30} y={118} width={110} height={10} rx={2} fill={DIM} />
-        <rect x={40} y={128} width={8} height={28} fill={DIM} />
-        <rect x={122} y={128} width={8} height={28} fill={DIM} />
-        {/* torso flat */}
-        <line x1={55} y1={80} x2={115} y2={80} stroke={INK} strokeWidth={5} strokeLinecap="round" />
-        <circle cx={125} cy={68} r={9} fill="none" stroke={INK} strokeWidth={3} />
-        <line x1={60} y1={80} x2={60} y2={118} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <line x1={115} y1={80} x2={110} y2={118} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <g className="hf-anim-row">
-          <line x1={95} y1={82} x2={95} y2={110} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={95} y={116} />
-        </g>
-      </Frame>
-      <Frame label="Row to hip">
-        <rect x={30} y={118} width={110} height={10} rx={2} fill={DIM} />
-        <rect x={40} y={128} width={8} height={28} fill={DIM} />
-        <rect x={122} y={128} width={8} height={28} fill={DIM} />
-        <line x1={55} y1={80} x2={115} y2={80} stroke={INK} strokeWidth={5} strokeLinecap="round" />
-        <circle cx={125} cy={68} r={9} fill="none" stroke={INK} strokeWidth={3} />
-        <line x1={60} y1={80} x2={60} y2={118} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <line x1={115} y1={80} x2={110} y2={118} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <g className="hf-anim-row hf-phase-b">
-          <line x1={95} y1={82} x2={105} y2={92} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={104} y={88} />
-        </g>
-      </Frame>
-    </div>
+  const pose = (cls: string) => (
+    <>
+      <rect x={30} y={118} width={110} height={10} rx={2} fill={DIM} />
+      <rect x={40} y={128} width={8} height={28} fill={DIM} />
+      <rect x={122} y={128} width={8} height={28} fill={DIM} />
+      <line x1={55} y1={80} x2={115} y2={80} stroke={INK} strokeWidth={5.5} strokeLinecap="round" />
+      <circle cx={126} cy={68} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
+      <line x1={60} y1={80} x2={60} y2={118} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={115} y1={80} x2={110} y2={118} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <g className={cls}>
+        <line x1={95} y1={82} x2={95} y2={108} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={95} y={114} />
+      </g>
+    </>
   );
+  return <Pair startLabel="Hang" endLabel="Row to hip" baseClass="hf-anim-row" pose={pose} />;
 }
 
-function StandingFigure({ armUp = 0 }: { armUp?: number }) {
-  // armUp 0 = at sides, 1 = overhead; we animate via CSS groups in parents
+function StandingFigure() {
   return (
     <>
-      <circle cx={100} cy={28} r={11} fill="none" stroke={INK} strokeWidth={3.5} />
-      <line x1={100} y1={40} x2={100} y2={105} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={105} x2={82} y2={150} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      <line x1={100} y1={105} x2={118} y2={150} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      <line x1={82} y1={150} x2={74} y2={150} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      <line x1={118} y1={150} x2={126} y2={150} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      {!armUp ? null : null}
+      <circle cx={100} cy={28} r={11} fill="none" stroke={INK} strokeWidth={4} />
+      <line x1={100} y1={40} x2={100} y2={105} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <line x1={100} y1={105} x2={82} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={105} x2={118} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={82} y1={150} x2={74} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={118} y1={150} x2={126} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
     </>
   );
 }
 
+/* ---------------- Shoulder press: goalpost start, bells overhead ---------------- */
 function ShoulderPressAnim() {
-  const arm = (x: number, flip = 1) => (
-    <g className="hf-anim-press" style={{ animationDelay: flip > 0 ? "0s" : "-0.15s" }}>
-      <line x1={100 + x} y1={62} x2={100 + x * 1.6} y2={34} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      <Dumbbell x={100 + x * 1.6} y={28} />
-    </g>
+  const pose = (cls: string) => (
+    <>
+      <StandingFigure />
+      {/* upper arms held horizontal — the press moves forearms + bells */}
+      <line x1={100} y1={62} x2={76} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={62} x2={124} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <g className={cls}>
+        <line x1={76} y1={62} x2={76} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <line x1={124} y1={62} x2={124} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={76} y={34} />
+        <Dumbbell x={124} y={34} />
+      </g>
+    </>
   );
-  return (
-    <div className="flex flex-wrap items-end justify-center gap-6">
-      <Frame label="At shoulders">
-        <StandingFigure />
-        <line x1={100} y1={62} x2={78} y2={72} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <line x1={100} y1={62} x2={122} y2={72} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <Dumbbell x={74} y={68} />
-        <Dumbbell x={126} y={68} />
-      </Frame>
-      <Frame label="Press overhead">
-        <StandingFigure />
-        {arm(-14)}
-        {arm(14, -1)}
-      </Frame>
-    </div>
-  );
+  return <Pair startLabel="At shoulders" endLabel="Press overhead" baseClass="hf-anim-press" pose={pose} />;
 }
 
+/* ---------------- Lateral raise: pinned shoulder pivots ---------------- */
 function LateralRaiseAnim() {
+  const pivot: CSSProperties = { transformBox: "view-box", transformOrigin: "100px 62px" };
   return (
     <div className="flex items-center justify-center">
       <Frame label="Raise to shoulder height">
-        <svg viewBox="0 0 200 170" className="hidden" />
         <StandingFigure />
-        <g className="hf-anim-raise-l">
-          <line x1={100} y1={62} x2={52} y2={78} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={46} y={80} />
+        <g className="hf-anim-raise-l" style={pivot}>
+          <line x1={100} y1={62} x2={54} y2={72} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+          <Dumbbell x={48} y={74} />
         </g>
-        <g className="hf-anim-raise-r">
-          <line x1={100} y1={62} x2={148} y2={78} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={154} y={80} />
+        <g className="hf-anim-raise-r" style={pivot}>
+          <line x1={100} y1={62} x2={146} y2={72} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+          <Dumbbell x={152} y={74} />
         </g>
       </Frame>
     </div>
   );
 }
 
+/* ---------------- Biceps curl: pinned elbow pivots, upper arms still ---------------- */
 function CurlAnim() {
-  return (
-    <div className="flex flex-wrap items-end justify-center gap-6">
-      <Frame label="Down">
-        <StandingFigure />
-        <line x1={100} y1={62} x2={84} y2={88} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <line x1={100} y1={62} x2={116} y2={88} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <g className="hf-anim-curl">
-          <line x1={84} y1={88} x2={84} y2={116} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={84} y={122} />
-        </g>
-        <g className="hf-anim-curl" style={{ animationDelay: "-0.15s" }}>
-          <line x1={116} y1={88} x2={116} y2={116} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={116} y={122} />
-        </g>
-      </Frame>
-      <Frame label="Curl up">
-        <StandingFigure />
-        <line x1={100} y1={62} x2={84} y2={88} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <line x1={100} y1={62} x2={116} y2={88} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <g className="hf-anim-curl" style={{ animationDelay: "-1.1s" }}>
-          <line x1={84} y1={88} x2={92} y2={64} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={93} y={58} />
-        </g>
-        <g className="hf-anim-curl" style={{ animationDelay: "-1.25s" }}>
-          <line x1={116} y1={88} x2={108} y2={64} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={107} y={58} />
-        </g>
-      </Frame>
-    </div>
+  const pose = (cls: string) => (
+    <>
+      <StandingFigure />
+      <line x1={100} y1={62} x2={86} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={62} x2={114} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <g
+        className={cls}
+        style={{ transformBox: "view-box", transformOrigin: "86px 86px" }}
+      >
+        <line x1={86} y1={86} x2={86} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={86} y={120} />
+      </g>
+      <g
+        className={cls}
+        style={{ transformBox: "view-box", transformOrigin: "114px 86px" }}
+      >
+        <line x1={114} y1={86} x2={114} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={114} y={120} />
+      </g>
+    </>
   );
+  return <Pair startLabel="Down" endLabel="Curl up" baseClass="hf-anim-curl" pose={pose} />;
 }
 
+/* ---------------- Overhead triceps: elbows pinned up, forearms hinge ---------------- */
 function TricepsAnim() {
+  const pose = (cls: string) => (
+    <>
+      <StandingFigure />
+      <line x1={100} y1={62} x2={94} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={62} x2={106} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <g
+        className={cls}
+        style={{ transformBox: "view-box", transformOrigin: "100px 40px" }}
+      >
+        <line x1={100} y1={40} x2={100} y2={14} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={100} y={8} />
+      </g>
+    </>
+  );
+  return <Pair startLabel="Behind head" endLabel="Press up" baseClass="hf-anim-tri" pose={pose} />;
+}
+
+/** Krita sprite strip: stepped playback on the same rep tempo. */
+function SpriteStrip({ exerciseId, frames }: { exerciseId: string; frames: number }) {
   return (
-    <div className="flex flex-wrap items-end justify-center gap-6">
-      <Frame label="Behind head">
-        <StandingFigure />
-        <line x1={100} y1={62} x2={100} y2={38} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <g className="hf-anim-tri">
-          <line x1={100} y1={38} x2={86} y2={58} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={82} y={62} />
-        </g>
-      </Frame>
-      <Frame label="Press up">
-        <StandingFigure />
-        <line x1={100} y1={62} x2={100} y2={38} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-        <g className="hf-anim-tri" style={{ animationDelay: "-1.2s" }}>
-          <line x1={100} y1={38} x2={100} y2={10} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-          <Dumbbell x={100} y={8} />
-        </g>
-      </Frame>
+    <div className="flex items-center justify-center" role="img" aria-label={`${exerciseId} demonstration`}>
+      <div
+        className="hf-sprite h-72 w-96"
+        style={
+          {
+            backgroundImage: `url(/sprites/${exerciseId}.png)`,
+            backgroundSize: `${frames * 100}% 100%`,
+            "--frames": frames,
+          } as CSSProperties
+        }
+      />
     </div>
   );
 }
 
-/** Compact single-figure preview for sidebars (small). */
+/** Compact single-figure preview for sidebars (decorative, fixed tempo). */
 function MiniFigure({ exerciseId }: { exerciseId: string }) {
   return (
     <svg viewBox="0 0 80 72" className="h-14 w-16 shrink-0" aria-hidden="true">
@@ -256,10 +261,12 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
           <line x1={40} y1={48} x2={33} y2={64} />
           <line x1={40} y1={48} x2={47} y2={64} />
           <g className="hf-anim-press">
-            <line x1={40} y1={28} x2={30} y2={16} />
-            <line x1={40} y1={28} x2={50} y2={16} />
-            <circle cx={29} cy={14} r={4.5} fill={BLUE} stroke="none" />
-            <circle cx={51} cy={14} r={4.5} fill={BLUE} stroke="none" />
+            <line x1={40} y1={28} x2={32} y2={26} />
+            <line x1={40} y1={28} x2={48} y2={26} />
+            <line x1={32} y1={26} x2={32} y2={14} />
+            <line x1={48} y1={26} x2={48} y2={14} />
+            <circle cx={32} cy={12} r={4} fill={BLUE} stroke="none" />
+            <circle cx={48} cy={12} r={4} fill={BLUE} stroke="none" />
           </g>
         </g>
       )}
@@ -320,66 +327,69 @@ const KNOWN_IDS = new Set([
 
 /** Placeholder for new catalog entries that don't have a custom figure yet. */
 function GenericAnim() {
-  return (
-    <div className="flex flex-wrap items-end justify-center gap-6">
-      <Frame label="Move">
-        <circle cx={100} cy={28} r={11} fill="none" stroke={INK} strokeWidth={4} />
-        <line x1={100} y1={40} x2={100} y2={105} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={100} y1={105} x2={82} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <line x1={100} y1={105} x2={118} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <g className="hf-anim-press">
-          <line x1={100} y1={62} x2={76} y2={80} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-          <line x1={100} y1={62} x2={124} y2={80} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-          <Dumbbell x={70} y={82} />
-          <Dumbbell x={130} y={82} />
-        </g>
-      </Frame>
-      <Frame label="Return">
-        <circle cx={100} cy={28} r={11} fill="none" stroke={INK} strokeWidth={4} />
-        <line x1={100} y1={40} x2={100} y2={105} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={100} y1={105} x2={82} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <line x1={100} y1={105} x2={118} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <g className="hf-anim-press" style={{ animationDelay: "-1.2s" }}>
-          <line x1={100} y1={62} x2={84} y2={100} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-          <line x1={100} y1={62} x2={116} y2={100} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-          <Dumbbell x={84} y={106} />
-          <Dumbbell x={116} y={106} />
-        </g>
-      </Frame>
-    </div>
+  const pose = (cls: string) => (
+    <>
+      <circle cx={100} cy={28} r={11} fill="none" stroke={INK} strokeWidth={4} />
+      <line x1={100} y1={40} x2={100} y2={105} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <line x1={100} y1={105} x2={82} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={105} x2={118} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <g className={cls}>
+        <line x1={100} y1={62} x2={76} y2={80} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <line x1={100} y1={62} x2={124} y2={80} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={70} y={82} />
+        <Dumbbell x={130} y={82} />
+      </g>
+    </>
   );
+  return <Pair startLabel="Move" endLabel="Return" baseClass="hf-anim-press" pose={pose} />;
 }
 
 export function ExerciseAnimation({
   exerciseId,
   variant = "full",
   className = "",
+  /** Seconds per rep — drives animation tempo. Defaults to a calm demo pace. */
+  repSeconds = 4,
+  /** Freeze mid-pose (workout paused). */
+  paused = false,
 }: {
   exerciseId: string;
   variant?: "full" | "mini";
   className?: string;
+  repSeconds?: number;
+  paused?: boolean;
 }) {
-  if (variant === "mini" && !KNOWN_IDS.has(exerciseId)) {
-    return (
-      <svg viewBox="0 0 80 72" className="h-14 w-16 shrink-0" aria-hidden="true">
-        <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
-          <circle cx={40} cy={12} r={5} />
-          <line x1={40} y1={18} x2={40} y2={48} strokeWidth={3} />
-          <line x1={40} y1={48} x2={33} y2={64} />
-          <line x1={40} y1={48} x2={47} y2={64} />
-          <g className="hf-anim-press">
-            <line x1={40} y1={28} x2={30} y2={42} />
-            <line x1={40} y1={28} x2={50} y2={42} />
-            <circle cx={29} cy={45} r={4} fill={BLUE} stroke="none" />
-            <circle cx={51} cy={45} r={4} fill={BLUE} stroke="none" />
+  if (variant === "mini") {
+    if (!KNOWN_IDS.has(exerciseId)) {
+      return (
+        <svg viewBox="0 0 80 72" className="h-14 w-16 shrink-0" aria-hidden="true">
+          <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
+            <circle cx={40} cy={12} r={5} />
+            <line x1={40} y1={18} x2={40} y2={48} strokeWidth={3} />
+            <line x1={40} y1={48} x2={33} y2={64} />
+            <line x1={40} y1={48} x2={47} y2={64} />
+            <g className="hf-anim-press">
+              <line x1={40} y1={28} x2={30} y2={42} />
+              <line x1={40} y1={28} x2={50} y2={42} />
+              <circle cx={29} cy={45} r={4} fill={BLUE} stroke="none" />
+              <circle cx={51} cy={45} r={4} fill={BLUE} stroke="none" />
+            </g>
           </g>
-        </g>
-      </svg>
-    );
+        </svg>
+      );
+    }
+    return <MiniFigure exerciseId={exerciseId} />;
   }
-  if (variant === "mini") return <MiniFigure exerciseId={exerciseId} />;
+
+  const frames = SPRITE_FRAMES[exerciseId];
+  if (frames) return <SpriteStrip exerciseId={exerciseId} frames={frames} />;
+
   return (
-    <div className={className} aria-hidden="false">
+    <div
+      className={`${paused ? "hf-paused" : ""} ${className}`}
+      style={{ "--rep-dur": `${Math.min(8, Math.max(1.2, repSeconds))}s` } as CSSProperties}
+      aria-hidden="false"
+    >
       {exerciseId === "bench-press" && <BenchPressAnim />}
       {exerciseId === "one-arm-row" && <RowAnim />}
       {exerciseId === "shoulder-press" && <ShoulderPressAnim />}

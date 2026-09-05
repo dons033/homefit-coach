@@ -199,7 +199,11 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
           </div>
 
           <div className="mt-2 w-full max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
-            <ExerciseAnimation exerciseId={centerExercise.id} />
+            <ExerciseAnimation
+              exerciseId={centerExercise.id}
+              repSeconds={ctl.effSecs(centerExercise).work / centerExercise.targetReps}
+              paused={paused}
+            />
           </div>
 
           {/* cues */}
@@ -232,6 +236,17 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
                 <div className="text-base uppercase tracking-wider text-slate-400">Target reps</div>
                 <div className="text-6xl font-extrabold">{centerExercise.targetReps}</div>
               </div>
+              {phase === "working" && (() => {
+                const repSecs = ctl.effSecs(exercise).work / exercise.targetReps;
+                const elapsed = ctl.totalDuration - secondsRemaining;
+                const est = Math.min(exercise.targetReps, Math.floor(elapsed / repSecs) + 1);
+                return (
+                  <div className="text-left">
+                    <div className="text-base uppercase tracking-wider text-slate-400">Pace — rep</div>
+                    <div className="text-6xl font-extrabold tabular-nums text-sky-300">~{est}</div>
+                  </div>
+                );
+              })()}
               {paused
                 ? <div className="rounded-xl bg-amber-400/15 px-4 py-2 text-2xl font-bold text-amber-300">Paused — tap to resume</div>
                 : <div className="rounded-xl bg-slate-700/60 px-4 py-2 text-xl font-bold text-slate-300">Tap timer to pause</div>}
