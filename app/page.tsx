@@ -26,7 +26,7 @@ function Stepper({
   step: number;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-800/60 px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-800/60 px-4 py-3">
       <div className="text-xl font-bold">{label}</div>
       <div className="flex items-center gap-2">
         <button

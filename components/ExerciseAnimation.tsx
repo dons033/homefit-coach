@@ -30,8 +30,8 @@ const BLUE = "#38bdf8";
 
 function Frame({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center">
-      <svg viewBox="0 0 200 170" className="h-56 w-64 sm:h-72 sm:w-96" role="img" aria-label={label}>
+    <div className="flex min-w-0 flex-col items-center">
+      <svg viewBox="0 0 200 170" className="h-auto w-full max-w-[360px]" role="img" aria-label={label}>
         {children}
       </svg>
       <div className="mt-1 text-base font-semibold tracking-wide text-slate-300">{label}</div>
@@ -62,7 +62,7 @@ function Pair({
   pose: (groupClass: string) => React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-center gap-6">
+    <div className="grid w-full max-w-3xl grid-cols-2 items-end gap-6 max-sm:grid-cols-1">
       <Frame label={startLabel}>{pose(baseClass)}</Frame>
       <Frame label={endLabel}>{pose(`${baseClass} hf-phase-b`)}</Frame>
     </div>
@@ -215,7 +215,7 @@ function SpriteStrip({ exerciseId, frames }: { exerciseId: string; frames: numbe
   return (
     <div className="flex items-center justify-center" role="img" aria-label={`${exerciseId} demonstration`}>
       <div
-        className="hf-sprite h-72 w-96"
+        className="hf-sprite aspect-[4/3] w-full max-w-96"
         style={
           {
             backgroundImage: `url(/sprites/${exerciseId}.png)`,

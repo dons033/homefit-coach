@@ -11,6 +11,19 @@ body {
   color: #f1f5f9;
 }
 
+/* Standalone (Add to Homescreen) safe areas: keep header/footer clear of
+ * the notch and home indicator. env() is 0 in regular Safari. */
+.hf-safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+.hf-safe-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+.hf-safe-x {
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
+}
+
 /* --- Stick-figure animations, synced to rep tempo ---
  * One loop = one rep. Duration comes from --rep-dur (set inline by
  * <ExerciseAnimation repSeconds={...}>, = work seconds ÷ target reps).

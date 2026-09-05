@@ -103,7 +103,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
   return (
     <div className="flex min-h-screen w-full flex-col bg-[#0a1120]">
       {/* Top bar */}
-      <header className="flex items-center justify-between gap-4 border-b border-slate-800 px-6 py-3">
+      <header className="hf-safe-top hf-safe-x flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 py-3">
         <div>
           <div className="flex items-center gap-3 text-2xl font-extrabold">
             HomeFit Coach
@@ -147,9 +147,9 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
         </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-[280px_1fr_300px] gap-0 max-lg:grid-cols-1">
+      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)_250px] xl:grid-cols-[280px_minmax(0,1fr)_300px]">
         {/* LEFT */}
-        <aside className="border-r border-slate-800 p-4 max-lg:hidden">
+        <aside className="min-w-0 border-r border-slate-800 p-4 max-lg:hidden">
           <div className="mb-2 text-lg font-bold text-slate-300">Workout Progress</div>
           <div className="mb-1 h-3 overflow-hidden rounded-full bg-slate-700">
             <div
@@ -185,7 +185,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
         </aside>
 
         {/* CENTER */}
-        <main className="flex flex-col items-center px-6 py-4 text-center">
+        <main className="flex min-w-0 flex-col items-center px-4 py-4 text-center sm:px-6">
           <div className="text-xl text-slate-400">Exercise {centerIndex + 1} of {totalExercises}</div>
           <h1 className="text-5xl font-extrabold leading-tight">
             {centerExercise.name}
@@ -225,7 +225,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
             <div className="text-2xl font-bold uppercase tracking-widest text-slate-300">
               {phaseLabel} — Set {phase === "resting" && nextStep ? nextStep.setNumber : setNumber} of {centerExercise.sets}
             </div>
-            <div className={`font-extrabold tabular-nums leading-none ${timerColor} text-[clamp(8rem,20vw,14rem)]`} aria-live="assertive">
+            <div className={`font-extrabold tabular-nums leading-none ${timerColor} text-[clamp(5rem,16vw,11rem)]`} aria-live="assertive">
               {formatClock(secondsRemaining)}
             </div>
             <div className="mx-auto mt-2 h-4 max-w-xl overflow-hidden rounded-full bg-slate-700">
@@ -267,7 +267,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
         </main>
 
         {/* RIGHT */}
-        <aside className="border-l border-slate-800 p-4 max-lg:hidden">
+        <aside className="min-w-0 border-l border-slate-800 p-4 max-lg:hidden">
           <div className="mb-2 text-xl font-bold">Next Up</div>
           {nextStep && phase !== "resting" ? (
             <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-3">
@@ -307,7 +307,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
       </div>
 
       {/* Bottom strip */}
-      <footer className="flex items-center justify-around gap-6 border-t border-slate-800 bg-slate-900/60 px-6 py-2">
+      <footer className="hf-safe-bottom hf-safe-x flex flex-wrap items-center justify-around gap-4 border-t border-slate-800 bg-slate-900/60 py-2">
         <div className="flex items-center gap-4">
           <div>
             <div className="text-sm uppercase tracking-wider text-sky-300">Up next</div>
