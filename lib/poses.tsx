@@ -59,13 +59,13 @@ const curlFrontBody = (
   <>
     <HeadFront x={100} y={28} />
     <TorsoFront x={100} top={40} bottom={102} />
-    <Dot x={82} y={62} />
-    <Dot x={118} y={62} />
-    <Limb x1={100} y1={62} x2={82} y2={86} />
-    <Limb x1={100} y1={62} x2={118} y2={86} />
-    <Dot x={82} y={86} />
-    <Dot x={118} y={86} />
-    {standingLegs(10)}
+    <Dot x={80} y={62} />
+    <Dot x={120} y={62} />
+    <Limb x1={100} y1={62} x2={80} y2={86} />
+    <Limb x1={100} y1={62} x2={120} y2={86} />
+    <Dot x={80} y={86} />
+    <Dot x={120} y={86} />
+    {standingLegs(8)}
     <Shorts x={100} y={94} />
   </>
 );
@@ -80,7 +80,7 @@ const hammerFrontBody = (
     <Limb x1={100} y1={62} x2={116} y2={86} />
     <Dot x={84} y={86} />
     <Dot x={116} y={86} />
-    {standingLegs(10)}
+    {standingLegs(8)}
     <Shorts x={100} y={94} />
   </>
 );
@@ -105,34 +105,34 @@ export const RIG_DEFS: Record<string, RigDef> = {
     body: (
       <>
         {curlFrontBody}
-        <Traj d="M82 120 A38 38 0 0 1 66 62" />
-        <Traj d="M118 120 A38 38 0 0 0 134 62" />
+        <Traj d="M80 120 A38 38 0 0 1 64 60" />
+        <Traj d="M120 120 A38 38 0 0 0 136 60" />
       </>
     ),
     joints: [
       {
         id: "elbowL",
-        pivot: [82, 86],
+        pivot: [80, 86],
         from: 0,
         to: -135,
         draw: (
           <>
-            <Limb x1={82} y1={86} x2={82} y2={114} />
-            <Mitt x={82} y={115} />
-            <Dumbbell x={82} y={122} />
+            <Limb x1={80} y1={86} x2={80} y2={114} />
+            <Mitt x={80} y={115} />
+            <Dumbbell x={80} y={122} s={0.85} />
           </>
         ),
       },
       {
         id: "elbowR",
-        pivot: [118, 86],
+        pivot: [120, 86],
         from: 0,
         to: -135,
         draw: (
           <>
-            <Limb x1={118} y1={86} x2={118} y2={114} />
-            <Mitt x={118} y={115} />
-            <Dumbbell x={118} y={122} />
+            <Limb x1={120} y1={86} x2={120} y2={114} />
+            <Mitt x={120} y={115} />
+            <Dumbbell x={120} y={122} s={0.85} />
           </>
         ),
       },
@@ -151,8 +151,8 @@ export const RIG_DEFS: Record<string, RigDef> = {
     body: (
       <>
         {hammerFrontBody}
-        <Traj d="M84 122 A34 34 0 0 1 74 66" />
-        <Traj d="M116 122 A34 34 0 0 0 126 66" />
+        <Traj d="M82 122 A34 34 0 0 1 72 66" />
+        <Traj d="M118 122 A34 34 0 0 0 128 66" />
       </>
     ),
     joints: [
@@ -163,9 +163,9 @@ export const RIG_DEFS: Record<string, RigDef> = {
         to: -120,
         draw: (
           <>
-            <Limb x1={84} y1={86} x2={84} y2={114} />
-            <Mitt x={84} y={115} />
-            <Plate x={84} y={122} />
+            <Limb x1={84} y1={86} x2={82} y2={114} />
+            <Mitt x={82} y={115} />
+            <Plate x={82} y={122} s={0.85} />
           </>
         ),
       },
@@ -176,9 +176,9 @@ export const RIG_DEFS: Record<string, RigDef> = {
         to: -120,
         draw: (
           <>
-            <Limb x1={116} y1={86} x2={116} y2={114} />
-            <Mitt x={116} y={115} />
-            <Plate x={116} y={122} />
+            <Limb x1={116} y1={86} x2={118} y2={114} />
+            <Mitt x={118} y={115} />
+            <Plate x={118} y={122} s={0.85} />
           </>
         ),
       },

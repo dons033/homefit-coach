@@ -104,29 +104,30 @@ function BenchPressAnim() {
   );
   const front = (
     <>
-      {/* bench seen end-on, behind the foreshortened body */}
-      <rect x={70} y={98} width={60} height={9} rx={2} fill={DIM} />
-      <rect x={78} y={107} width={7} height={30} fill={DIM} />
-      <rect x={115} y={107} width={7} height={30} fill={DIM} />
-      <circle cx={100} cy={42} r={8} fill="none" stroke={INK} strokeWidth={3.5} />
-      <rect x={82} y={54} width={36} height={44} rx={10} fill="none" stroke={INK} strokeWidth={4.5} />
-      <line x1={100} y1={98} x2={80} y2={130} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={80} y1={130} x2={78} y2={154} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={78} y1={154} x2={70} y2={154} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={98} x2={120} y2={130} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={120} y1={130} x2={122} y2={154} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={122} y1={154} x2={130} y2={154} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <circle cx={83} cy={62} r={2.5} fill={INK} />
-      <circle cx={117} cy={62} r={2.5} fill={INK} />
-      <path className="hf-traj" d="M80 40 V72" />
-      <path className="hf-traj" d="M120 40 V72" />
+      {/* long bench bar behind everything: this figure is LYING down */}
+      <rect x={28} y={92} width={144} height={10} rx={2} fill={DIM} />
+      <rect x={40} y={102} width={8} height={34} fill={DIM} />
+      <rect x={152} y={102} width={8} height={34} fill={DIM} />
+      <circle cx={100} cy={40} r={8} fill="none" stroke={INK} strokeWidth={3.5} />
+      <rect x={84} y={52} width={32} height={46} rx={10} fill="none" stroke={INK} strokeWidth={4.5} />
+      {/* knees bent, feet flat — the unmistakable lying cue */}
+      <line x1={100} y1={96} x2={78} y2={70} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <line x1={78} y1={70} x2={70} y2={100} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <rect x={60} y={97} width={18} height={7} rx={3.5} fill={INK} />
+      <line x1={100} y1={96} x2={122} y2={70} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <line x1={122} y1={70} x2={130} y2={100} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <rect x={122} y={97} width={18} height={7} rx={3.5} fill={INK} />
+      <circle cx={85} cy={60} r={2.5} fill={INK} />
+      <circle cx={115} cy={60} r={2.5} fill={INK} />
+      <path className="hf-traj" d="M80 38 V70" />
+      <path className="hf-traj" d="M120 38 V70" />
       <g className="hf-anim-press">
-        <line x1={83} y1={62} x2={72} y2={86} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={72} y1={86} x2={80} y2={58} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={117} y1={62} x2={128} y2={86} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={128} y1={86} x2={120} y2={58} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <Dumbbell x={80} y={51} />
-        <Dumbbell x={120} y={51} />
+        <line x1={85} y1={60} x2={72} y2={84} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+        <line x1={72} y1={84} x2={80} y2={56} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+        <line x1={115} y1={60} x2={128} y2={84} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+        <line x1={128} y1={84} x2={120} y2={56} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+        <Dumbbell x={80} y={49} />
+        <Dumbbell x={120} y={49} />
       </g>
     </>
   );
@@ -164,12 +165,12 @@ function RowAnim() {
       <line x1={70} y1={80} x2={70} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
       <line x1={140} y1={80} x2={122} y2={106} stroke={INK} strokeWidth={4} strokeLinecap="round" />
       <circle cx={118} cy={110} r={7} fill="none" stroke={INK} strokeWidth={3.5} />
-      <line x1={144} y1={80} x2={146} y2={116} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={146} y1={116} x2={152} y2={116} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M130 86 V110" />
+      <line x1={148} y1={80} x2={150} y2={116} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={150} y1={116} x2={156} y2={116} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <path className="hf-traj" d="M138 86 V110" />
       <g className="hf-anim-row">
-        <line x1={130} y1={82} x2={130} y2={106} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Plate x={130} y={112} />
+        <line x1={138} y1={82} x2={138} y2={106} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Plate x={138} y={112} />
       </g>
     </>
   );
@@ -303,9 +304,7 @@ function TricepsAnim() {
   );
   const front = (
     <>
-      <StandingFigure />
-      <line x1={100} y1={62} x2={94} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={62} x2={106} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      {/* bell group first: it passes BEHIND the head, as in the lift */}
       <path className="hf-traj" d="M100 6 A34 34 0 0 0 64 44" />
       <g
         className="hf-anim-tri"
@@ -315,6 +314,9 @@ function TricepsAnim() {
         <line x1={106} y1={40} x2={101} y2={24} stroke={INK} strokeWidth={4} strokeLinecap="round" />
         <DumbbellV x={100} y={8} />
       </g>
+      <StandingFigure />
+      <line x1={100} y1={62} x2={94} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={62} x2={106} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
     </>
   );
   return <Views aLabel="Side" bLabel="Front" a={side} b={front} />;
