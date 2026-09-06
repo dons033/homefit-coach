@@ -67,6 +67,14 @@ body {
   88% { transform: rotate(0deg); }
   100% { transform: rotate(0deg); }
 }
+/* Profile curl (facing left): hinge forward-up, clockwise in screen space. */
+@keyframes hf-curlside {
+  0% { transform: rotate(0deg); }
+  38% { transform: rotate(135deg); }
+  52% { transform: rotate(135deg); }
+  88% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
 @keyframes hf-tri {
   0% { transform: rotate(0deg); }
   38% { transform: rotate(-100deg); }
@@ -96,12 +104,10 @@ body {
 .hf-anim-raise-l { animation: hf-raise var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-raise-r { animation: hf-raise-r var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-curl { animation: hf-curl var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
+.hf-anim-curlside { animation: hf-curlside var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-tri { animation: hf-tri var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-trirear { animation: hf-trirear var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-soft { animation: hf-breathe 2.4s ease-in-out infinite; }
-
-/* Start/end pair partner: runs half a rep out of phase, tempo-relative. */
-.hf-phase-b { animation-delay: calc(var(--rep-dur, 4s) / -2) !important; }
 
 /* Workout paused: freeze every figure mid-pose. */
 .hf-paused, .hf-paused * { animation-play-state: paused !important; }
@@ -143,6 +149,7 @@ body {
   .hf-anim-raise-l,
   .hf-anim-raise-r,
   .hf-anim-curl,
+  .hf-anim-curlside,
   .hf-anim-tri,
   .hf-anim-trirear,
   .hf-anim-soft,
