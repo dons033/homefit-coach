@@ -243,10 +243,9 @@ function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paus
       <rect x={44} y={107} width={18} height={5} rx={2.5} fill={INK} />
       <rect x={60} y={65} width={72} height={18} rx={9} fill={INK} />
       <path d="M52 68 L65 73 M126 81 L145 123 L162 157 L149 157" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
-      {/* Head continues the spine line — neck level, eyes forward, no droop. */}
-      <path d="M51 60 L60 66" stroke={INK} strokeWidth={6} strokeLinecap="round" />
-      <circle cx={44} cy={54} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
-      <path d="M35 52 L29 54 L35 57" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
+      {/* Head is a straight continuation of the spine — level gaze, no droop. */}
+      <circle cx={48} cy={73} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <path d="M39 71 L34 72 L40 75" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
       <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
         <path d={sideTop} />
         <rect x={93} y={87} width={26} height={14} rx={3} />
@@ -301,17 +300,28 @@ function StandingFront() {
   );
 }
 
-/** Shared standing profile body (facing left): floor, head, torso, legs. */
+/** Shared standing profile body (facing left): floor, torso, legs.
+ *  Head is separate (SideHead) so figures can draw it AFTER their movers —
+ *  limbs that pass beside/behind the face stay readable. */
 function StandingSide() {
   return (
     <>
       <path d="M30 157 H170" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
-      <circle cx={62} cy={32} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
-      <path d="M53 31 L48 33 L54 35" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
-      <rect x={68} y={44} width={17} height={51} rx={8.5} fill={INK} />
+      <rect x={68} y={42} width={17} height={53} rx={8.5} fill={INK} />
       <path d="M75 93 L64 150 M75 93 L87 150" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
       <ellipse cx={58} cy={151} rx={9} ry={4.5} fill={INK} />
       <ellipse cx={81} cy={151} rx={9} ry={4.5} fill={INK} />
+    </>
+  );
+}
+
+/** Profile head ON the torso axis (spine-aligned, no forward jut). Bg fill
+ *  hides anything passing behind it; drawn after the movers. */
+function SideHead() {
+  return (
+    <>
+      <circle cx={74} cy={30} r={10} fill="#0a1120" stroke={INK} strokeWidth={3.5} />
+      <path d="M65 28 L60 30 L66 32" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
     </>
   );
 }
@@ -373,6 +383,7 @@ function ShoulderPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: nu
         <g data-sp-bell className="hf-sp-side-bell" stroke="none"><Plate x={66} y={52} s={0.9} /></g>
       </g>
       <circle cx={76} cy={56} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
+      <SideHead />
     </>
   );
   return (
@@ -408,17 +419,19 @@ function LateralRaiseAnim() {
   const side = (
     <>
       <StandingSide />
-      {/* Ghost at the raised extreme (95° about the shoulder). */}
+      {/* Ghost at the raised extreme (95° about the shoulder); arm straight —
+       * the "slight bend" reads as a wrong-way kink at this size. */}
       <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
-        <path d="M76 56 L51 48 L26 50" />
+        <path d="M76 56 L26 50" />
         <circle cx={20} cy={49} r={9} />
       </g>
       <path className="hf-traj" d="M74 112 A56 56 0 0 1 20 49" />
       <g className="hf-mover hf-raise-side" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M76 56 L70 82 L74 106" />
+        <path d="M76 56 L74 106" />
         <g stroke="none"><Plate x={74} y={112} s={0.9} /></g>
       </g>
       <circle cx={76} cy={56} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
+      <SideHead />
     </>
   );
   return <Views aLabel="Front" bLabel="Side" a={front} b={side} />;
@@ -444,8 +457,8 @@ function CurlViews({ hammer, repSeconds, paused }: { hammer: boolean; repSeconds
   const front = (
     <>
       <StandingFront />
-      {/* Pinned upper arms: static body — the elbow is the only mover. */}
-      <path d="M85 58 L85 86 M115 58 L115 86" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" />
+      {/* Whole arm blue (even the pinned upper arm) — one blue unit reads as
+       * "this is the limb that moves the bell". */}
       <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
         <path d={topL} />
         <path d={topR} />
@@ -464,6 +477,8 @@ function CurlViews({ hammer, repSeconds, paused }: { hammer: boolean; repSeconds
       <path className="hf-traj" d={`M85 114 L82 ${bellTopY}`} />
       <path className="hf-traj" d={`M115 114 L118 ${bellTopY}`} />
       <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        {/* Pinned upper arms stay still, but they render blue with the forearm. */}
+        <path d="M85 58 L85 86 M115 58 L115 86" />
         <path d={restL}><ArmMorphD rest={restL} top={topL} dur={dur} on={motion} /></path>
         <path d={restR}><ArmMorphD rest={restR} top={topR} dur={dur} on={motion} /></path>
         {hammer ? (
@@ -501,46 +516,67 @@ function CurlViews({ hammer, repSeconds, paused }: { hammer: boolean; repSeconds
   );
 }
 
-/* ---------------- Overhead triceps: SIDE profile + FRONT (vertical bells) ---------------- */
-function TricepsAnim() {
+/* ---------------- Overhead triceps: SIDE profile + FRONT (vertical bell) ----------------
+ * Lockout: arms extended overhead, bell vertical. Lower: elbows stay pinned
+ * beside the head while the forearms fold back, taking the bell behind the
+ * head. Front view foreshortens the fold (SMIL morph — the hand travels a
+ * line); the bell rides CSS translate and passes BEHIND the head (drawn
+ * before the body). Side view: rigid forearm rotation about the elbow (CSS
+ * rotate, bell in-group so it tracks and tilts with the wrists). */
+const TRI_FRONT_REST_L = "M85 30 L93 14";
+const TRI_FRONT_TOP_L = "M85 30 L92 42";
+const TRI_FRONT_REST_R = "M115 30 L107 14";
+const TRI_FRONT_TOP_R = "M115 30 L108 42";
+
+function TricepsAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+  const dur = Math.min(5, Math.max(2.5, repSeconds));
+  const motion = !usePrefersReducedMotion();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useSmilClock(boxRef, "[data-tri-bell]", paused, motion, dur);
   const side = (
-    <g transform="translate(10 10) scale(0.9)">
-      <circle cx={58} cy={42} r={10} fill="none" stroke={INK} strokeWidth={4} />
-      <line x1={49} y1={40} x2={44} y2={38} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
-      <line x1={70} y1={54} x2={70} y2={114} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <line x1={70} y1={114} x2={58} y2={158} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={70} y1={114} x2={84} y2={158} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={58} y1={158} x2={50} y2={158} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={84} y1={158} x2={92} y2={158} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={70} y1={56} x2={73} y2={34} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M78 14 A30 30 0 0 1 102 52" />
-      <g
-        className="hf-anim-trirear"
-        style={{ transformBox: "view-box", transformOrigin: "73px 34px" }}
-      >
-        <line x1={73} y1={34} x2={75} y2={12} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <DumbbellV x={75} y={6} />
+    <>
+      <StandingSide />
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d="M86 34 L104 48" />
+        <rect x={93} y={42} width={22} height={12} rx={6} />
       </g>
-    </g>
+      <path className="hf-traj" d="M91 12 A23 23 0 0 1 104 48" />
+      {/* Upper arm: pinned beside the head, renders blue with the forearm. */}
+      <path d="M76 54 L86 34" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" />
+      <g className="hf-mover hf-tri-side" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M86 34 L91 12" />
+        <g stroke="none"><DumbbellV x={91} y={12} s={0.55} /></g>
+      </g>
+      <SideHead />
+      <circle cx={86} cy={34} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
+    </>
   );
   const front = (
     <>
-      {/* bell group first: it passes BEHIND the head, as in the lift */}
-      <path className="hf-traj" d="M100 6 A34 34 0 0 0 64 44" />
-      <g
-        className="hf-anim-tri"
-        style={{ transformBox: "view-box", transformOrigin: "100px 40px" }}
-      >
-        <line x1={94} y1={40} x2={99} y2={24} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <line x1={106} y1={40} x2={101} y2={24} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <DumbbellV x={100} y={8} />
+      {/* Bell + trajectory first: they pass BEHIND the head, as in the lift. */}
+      <path className="hf-traj" d="M100 14 V42" />
+      <g data-tri-bell className="hf-tri-front-bell" stroke="none"><DumbbellV x={100} y={14} s={0.65} /></g>
+      <StandingFront />
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d={TRI_FRONT_TOP_L} />
+        <path d={TRI_FRONT_TOP_R} />
+        <rect x={95.5} y={28.5} width={9} height={27} rx={4.5} />
       </g>
-      <StandingFigure />
-      <line x1={100} y1={62} x2={94} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={62} x2={106} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        {/* Upper arms pinned beside the head, blue with the forearms. */}
+        <path d="M85 58 L85 30 M115 58 L115 30" />
+        <path d={TRI_FRONT_REST_L}><ArmMorphD rest={TRI_FRONT_REST_L} top={TRI_FRONT_TOP_L} dur={dur} on={motion} /></path>
+        <path d={TRI_FRONT_REST_R}><ArmMorphD rest={TRI_FRONT_REST_R} top={TRI_FRONT_TOP_R} dur={dur} on={motion} /></path>
+      </g>
+      <circle cx={85} cy={30} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
+      <circle cx={115} cy={30} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
     </>
   );
-  return <Views aLabel="Side" bLabel="Front" a={side} b={front} />;
+  return (
+    <div ref={boxRef}>
+      <Views aLabel="Side" bLabel="Front" a={side} b={front} />
+    </div>
+  );
 }
 
 /** Krita sprite strip: stepped playback on the same rep tempo. */
@@ -630,9 +666,8 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
           <circle cx={100} cy={35} r={10} strokeWidth={4} />
           <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} stroke="none" />
           <path d="M93 95 L89 150 M107 95 L111 150" />
-          <path d="M85 58 L85 86 M115 58 L115 86" />
-          {/* Static hang identifies the move; the full figure teaches it. */}
           <g stroke={BLUE}>
+            <path d="M85 58 L85 86 M115 58 L115 86" />
             <path d="M85 86 L85 114" />
             <path d="M115 86 L115 114" />
             <g stroke="none"><Dumbbell x={85} y={114} s={0.75} /><Dumbbell x={115} y={114} s={0.75} /></g>
@@ -645,8 +680,8 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
           <circle cx={100} cy={35} r={10} strokeWidth={4} />
           <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} stroke="none" />
           <path d="M93 95 L89 150 M107 95 L111 150" />
-          <path d="M85 58 L85 86 M115 58 L115 86" />
           <g stroke={BLUE}>
+            <path d="M85 58 L85 86 M115 58 L115 86" />
             <path d="M85 86 L85 114" />
             <path d="M115 86 L115 114" />
             <g stroke="none"><Plate x={85} y={114} s={0.85} /><Plate x={115} y={114} s={0.85} /></g>
@@ -654,14 +689,16 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
         </g>
       )}
       {exerciseId === "triceps-extension" && (
-        <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
-          <circle cx={40} cy={20} r={5} />
-          <line x1={40} y1={26} x2={40} y2={52} strokeWidth={3} />
-          <line x1={40} y1={52} x2={33} y2={66} />
-          <line x1={40} y1={52} x2={47} y2={66} />
-          <g className="hf-anim-tri">
-            <line x1={40} y1={30} x2={40} y2={10} />
-            <circle cx={40} cy={7} r={4.5} fill={BLUE} stroke="none" />
+        <g transform="scale(0.4)" stroke={INK} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M30 157 H170" stroke={DIM} strokeWidth={5} />
+          <circle cx={100} cy={35} r={10} strokeWidth={4} />
+          <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} stroke="none" />
+          <path d="M93 95 L89 150 M107 95 L111 150" />
+          {/* Static lockout overhead: whole arm blue, bell centered. */}
+          <g stroke={BLUE}>
+            <path d="M85 58 L85 30 M115 58 L115 30" />
+            <path d="M85 30 L93 14 M115 30 L107 14" />
+            <g stroke="none"><DumbbellV x={100} y={14} s={0.65} /></g>
           </g>
         </g>
       )}
@@ -775,7 +812,7 @@ export function ExerciseAnimation({
       {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
       {exerciseId === "biceps-curl" && <CurlViews hammer={false} repSeconds={repSeconds} paused={paused} />}
       {exerciseId === "biceps-curl-hammer" && <CurlViews hammer={true} repSeconds={repSeconds} paused={paused} />}
-      {exerciseId === "triceps-extension" && <TricepsAnim />}
+      {exerciseId === "triceps-extension" && <TricepsAnim repSeconds={repSeconds} paused={paused} />}
       {!KNOWN_IDS.has(exerciseId) && <GenericAnim />}
       <PhaseCaption />
     </div>

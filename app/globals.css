@@ -76,36 +76,6 @@ body {
   88% { transform: rotate(30deg); }
   100% { transform: rotate(30deg); }
 }
-@keyframes hf-curl {
-  0% { transform: rotate(0deg); }
-  38% { transform: rotate(-135deg); }
-  52% { transform: rotate(-135deg); }
-  88% { transform: rotate(0deg); }
-  100% { transform: rotate(0deg); }
-}
-/* Profile curl (facing left): hinge forward-up, clockwise in screen space. */
-@keyframes hf-curlside {
-  0% { transform: rotate(0deg); }
-  38% { transform: rotate(135deg); }
-  52% { transform: rotate(135deg); }
-  88% { transform: rotate(0deg); }
-  100% { transform: rotate(0deg); }
-}
-@keyframes hf-tri {
-  0% { transform: rotate(0deg); }
-  38% { transform: rotate(-100deg); }
-  52% { transform: rotate(-100deg); }
-  88% { transform: rotate(0deg); }
-  100% { transform: rotate(0deg); }
-}
-/* Profile rear hinge (overhead → behind head): clockwise in screen space. */
-@keyframes hf-trirear {
-  0% { transform: rotate(0deg); }
-  38% { transform: rotate(108deg); }
-  52% { transform: rotate(108deg); }
-  88% { transform: rotate(0deg); }
-  100% { transform: rotate(0deg); }
-}
 @keyframes hf-breathe {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.75; }
@@ -186,16 +156,29 @@ body {
   transform-box: view-box;
   transform-origin: 76px 56px;
 }
+/* Triceps side: rigid forearm rotation about the pinned elbow; bell rides
+ * in-group so it tracks and tilts with the wrists. Front view bell (drawn
+ * behind the head) rides CSS translate in ExerciseAnimation.tsx. */
+@keyframes hf-tri-side {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  38%, 52% { transform: rotate(115deg); }
+}
+.hf-tri-side {
+  animation: hf-tri-side var(--rep-dur, 4s) ease-in-out infinite;
+  transform-box: view-box;
+  transform-origin: 86px 34px;
+}
+@keyframes hf-tri-front-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(0, 28px); }
+}
+.hf-tri-front-bell { animation: hf-tri-front-bell var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-row { animation: hf-row var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-raise-l { animation: hf-raise var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-raise-r { animation: hf-raise-r var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 /* Full-ROM variants (workout figures + minis keep the small decorative loop). */
 .hf-anim-raiseFL { animation: hf-raiseF var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-raiseFR { animation: hf-raiseR var(--rep-dur, 4s) ease-in-out infinite; }
-.hf-anim-curl { animation: hf-curl var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
-.hf-anim-curlside { animation: hf-curlside var(--rep-dur, 4s) ease-in-out infinite; }
-.hf-anim-tri { animation: hf-tri var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
-.hf-anim-trirear { animation: hf-trirear var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-soft { animation: hf-breathe 2.4s ease-in-out infinite; }
 
 /* Workout paused: freeze every figure mid-pose. */
@@ -212,10 +195,6 @@ body {
 .hf-anim-raise-r line,
 .hf-anim-raiseFL line,
 .hf-anim-raiseFR line,
-.hf-anim-curl line,
-.hf-anim-curlside line,
-.hf-anim-tri line,
-.hf-anim-trirear line,
 .hf-mover line { stroke: #38bdf8; }
 .hf-anim-press,
 .hf-anim-row,
@@ -223,10 +202,6 @@ body {
 .hf-anim-raise-r,
 .hf-anim-raiseFL,
 .hf-anim-raiseFR,
-.hf-anim-curl,
-.hf-anim-curlside,
-.hf-anim-tri,
-.hf-anim-trirear,
 .hf-mover,
 .rg-mover { filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.45)); }
 
@@ -278,16 +253,14 @@ body {
   .hf-curl-hammer-left-bell,
   .hf-curl-hammer-right-bell,
   .hf-raise-side,
+  .hf-tri-side,
+  .hf-tri-front-bell,
   .hf-anim-press,
   .hf-anim-row,
   .hf-anim-raise-l,
   .hf-anim-raise-r,
-  .hf-anim-curl,
-  .hf-anim-curlside,
   .hf-anim-raiseFL,
   .hf-anim-raiseFR,
-  .hf-anim-tri,
-  .hf-anim-trirear,
   .hf-anim-soft,
   .hf-sprite,
   .hf-cap-lift,

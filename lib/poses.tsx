@@ -44,11 +44,12 @@ function profileLegs(hipX = 72, hipY = 106, footY = 150) {
 
 const curlSideBody = (
   <>
-    {/* Head continues the spine line — level nose, no droop. */}
-    <HeadProfile x={58} y={26} />
+    {/* Head ON the torso axis — spine-aligned, no forward jut. */}
+    <HeadProfile x={72} y={28} />
     <rect x={66} y={40} width={17} height={56} rx={8.5} fill={INK} />
-    <Dot x={74} y={52} />
-    <Limb x1={74} y1={52} x2={74} y2={84} w={7} />
+    {/* Whole arm blue (even the pinned upper arm) for motion clarity. */}
+    <Dot x={74} y={52} c={ACTIVE} />
+    <Limb x1={74} y1={52} x2={74} y2={84} w={7} c={ACTIVE} />
     {profileLegs(74, 94, 150)}
   </>
 );
