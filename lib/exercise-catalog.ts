@@ -189,23 +189,43 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
     muscles: ["biceps", "forearms"],
     equipment: ["dumbbells"],
     defaultVariant: "standard",
-    variants: standard(
-      [
-        "Stand tall, elbows pinned at your sides.",
-        "Curl both dumbbells to shoulder height.",
-        "Keep wrists straight, don't swing your back.",
-        "Lower all the way down with control.",
-      ],
-      "biceps-curl",
-      {
+    variants: {
+      standard: {
+        id: "standard",
+        label: "Standard",
+        animationId: "biceps-curl",
         formImages: { start: "/form/biceps-curl/0.jpg", end: "/form/biceps-curl/1.jpg" },
         dbSteps: [
           "Arms hang, palms forward, elbows pinned at your sides.",
           "Curl to shoulder level, squeeze briefly at the top.",
           "Lower slowly to full extension.",
         ],
-      }
-    ),
+        cues: [
+          "Stand tall, elbows pinned at your sides.",
+          "Curl both dumbbells to shoulder height.",
+          "Keep wrists straight, don't swing your back.",
+          "Lower all the way down with control.",
+        ],
+      },
+      hammer: {
+        id: "hammer",
+        label: "Hammer",
+        animationId: "biceps-curl-hammer",
+        notes: "Neutral grip biases brachialis + forearms. Same hinge, turned handle.",
+        formImages: { start: "/form/biceps-curl-hammer/0.jpg", end: "/form/biceps-curl-hammer/1.jpg" },
+        dbSteps: [
+          "Neutral grip — palms face your thighs, plates face forward.",
+          "Curl to chest height keeping elbows back.",
+          "Squeeze, lower slowly to straight arms.",
+        ],
+        cues: [
+          "Stand tall, palms facing your thighs (neutral grip).",
+          "Curl with elbows pinned, bells travel close to your body.",
+          "Finish at chest height, squeeze briefly.",
+          "Lower slowly to full extension. No swinging.",
+        ],
+      },
+    },
   },
   "triceps-extension": {
     id: "triceps-extension",

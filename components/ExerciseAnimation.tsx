@@ -1,6 +1,9 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { Dumbbell, Plate, DumbbellV } from "./bells";
+import { RigFigure } from "./RigFigure";
+import { RIG_DEFS } from "@/lib/poses";
 
 /* Procedural stick-figure demos. Doctrine:
  *   - EVERY exercise shows TWO DIFFERENT views (side/front/top/back —
@@ -37,38 +40,6 @@ function Frame({ label, children }: { label: string; children: React.ReactNode }
       </svg>
       <div className="mt-1 text-base font-semibold tracking-wide text-slate-300">{label}</div>
     </div>
-  );
-}
-
-/** Full dumbbell: handle running across the view. */
-function Dumbbell({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x} ${y})`}>
-      <rect x={-14} y={-7} width={28} height={14} rx={7} fill={BLUE} />
-      <rect x={-18} y={-10} width={6} height={20} rx={3} fill={BLUE} opacity={0.85} />
-      <rect x={12} y={-10} width={6} height={20} rx={3} fill={BLUE} opacity={0.85} />
-    </g>
-  );
-}
-
-/** End-on dumbbell: handle running along the view axis (plate face). */
-function Plate({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x} ${y})`}>
-      <circle r={11} fill={BLUE} />
-      <circle r={4.5} fill="#0a1120" />
-    </g>
-  );
-}
-
-/** Two-handed overhead hold: vertical bell, unmistakable tri icon. */
-function DumbbellV({ x, y }: { x: number; y: number }) {
-  return (
-    <g transform={`translate(${x} ${y})`}>
-      <rect x={-7} y={-15} width={14} height={30} rx={7} fill={BLUE} />
-      <rect x={-11} y={-21} width={22} height={7} rx={3.5} fill={BLUE} opacity={0.85} />
-      <rect x={-11} y={14} width={22} height={7} rx={3.5} fill={BLUE} opacity={0.85} />
-    </g>
   );
 }
 
@@ -279,51 +250,33 @@ function LateralRaiseAnim() {
 }
 
 /* ---------------- Biceps curl: FRONT (bars) + SIDE profile (plates) ---------------- */
-function CurlAnim() {
-  const front = (
-    <>
-      <StandingFigure spread={10} />
-      <line x1={100} y1={62} x2={82} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={62} x2={118} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M82 120 A38 38 0 0 1 66 62" />
-      <path className="hf-traj" d="M118 120 A38 38 0 0 0 134 62" />
-      <g
-        className="hf-anim-curl"
-        style={{ transformBox: "view-box", transformOrigin: "82px 86px" }}
-      >
-        <line x1={82} y1={86} x2={82} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={82} y={120} />
-      </g>
-      <g
-        className="hf-anim-curl"
-        style={{ transformBox: "view-box", transformOrigin: "118px 86px" }}
-      >
-        <line x1={118} y1={86} x2={118} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={118} y={120} />
-      </g>
-    </>
+/* ---------------- Rig-driven curls (regular + hammer share the side view) ---------------- */
+function RigViews({
+  frontId,
+  sideId,
+  repSeconds,
+  paused,
+}: {
+  frontId: string;
+  sideId: string;
+  repSeconds: number;
+  paused: boolean;
+}) {
+  const front = RIG_DEFS[frontId];
+  const side = RIG_DEFS[sideId];
+  if (!front || !side) return null;
+  return (
+    <div className="grid w-full max-w-3xl grid-cols-2 items-end gap-6 max-sm:grid-cols-1">
+      <div className="flex min-w-0 flex-col items-center">
+        <RigFigure joints={front.joints} body={front.body} repSeconds={repSeconds} paused={paused} />
+        <div className="mt-1 text-base font-semibold tracking-wide text-slate-300">Front</div>
+      </div>
+      <div className="flex min-w-0 flex-col items-center">
+        <RigFigure joints={side.joints} body={side.body} repSeconds={repSeconds} paused={paused} />
+        <div className="mt-1 text-base font-semibold tracking-wide text-slate-300">Side</div>
+      </div>
+    </div>
   );
-  const side = (
-    <>
-      <circle cx={62} cy={32} r={10} fill="none" stroke={INK} strokeWidth={4} />
-      <line x1={53} y1={30} x2={48} y2={28} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
-      <line x1={72} y1={44} x2={72} y2={106} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <line x1={72} y1={106} x2={60} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={72} y1={106} x2={84} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={60} y1={150} x2={52} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={84} y1={150} x2={92} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={72} y1={58} x2={72} y2={84} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M72 118 A36 36 0 0 1 40 82" />
-      <g
-        className="hf-anim-curlside"
-        style={{ transformBox: "view-box", transformOrigin: "72px 84px" }}
-      >
-        <line x1={72} y1={84} x2={72} y2={112} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Plate x={72} y={118} />
-      </g>
-    </>
-  );
-  return <Views aLabel="Front" bLabel="Side" a={front} b={side} />;
 }
 
 /* ---------------- Overhead triceps: SIDE profile + FRONT (vertical bells) ---------------- */
@@ -457,6 +410,20 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
           </g>
         </g>
       )}
+      {exerciseId === "biceps-curl-hammer" && (
+        <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
+          <circle cx={40} cy={12} r={5} />
+          <line x1={40} y1={18} x2={40} y2={48} strokeWidth={3} />
+          <line x1={40} y1={48} x2={33} y2={64} />
+          <line x1={40} y1={48} x2={47} y2={64} />
+          <g className="hf-anim-curl">
+            <line x1={40} y1={28} x2={34} y2={44} />
+            <circle cx={34} cy={48} r={4} fill={BLUE} stroke="none" />
+            <line x1={40} y1={28} x2={46} y2={44} />
+            <circle cx={46} cy={48} r={4} fill={BLUE} stroke="none" />
+          </g>
+        </g>
+      )}
       {exerciseId === "triceps-extension" && (
         <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
           <circle cx={40} cy={20} r={5} />
@@ -479,6 +446,7 @@ const KNOWN_IDS = new Set([
   "shoulder-press",
   "lateral-raise",
   "biceps-curl",
+  "biceps-curl-hammer",
   "triceps-extension",
 ]);
 
@@ -515,7 +483,7 @@ function GenericAnim() {
 
 /** Rep-phase caption: LIFT → HOLD → LOWER → BOTTOM, on the same tempo.
  *  Lives inside the --rep-dur wrapper so it stays in sync with the figure. */
-function PhaseCaption() {
+export function PhaseCaption() {
   return (
     <div className="relative mx-auto mt-1 h-7 w-full max-w-3xl text-center text-lg font-bold uppercase tracking-[0.2em]" aria-hidden="true">
       <span className="hf-cap-lift absolute inset-0 text-green-300">Lift ↑</span>
@@ -576,7 +544,12 @@ export function ExerciseAnimation({
       {exerciseId === "one-arm-row" && <RowAnim />}
       {exerciseId === "shoulder-press" && <ShoulderPressAnim />}
       {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
-      {exerciseId === "biceps-curl" && <CurlAnim />}
+      {exerciseId === "biceps-curl" && (
+        <RigViews frontId="curl-front-regular" sideId="curl-side" repSeconds={repSeconds} paused={paused} />
+      )}
+      {exerciseId === "biceps-curl-hammer" && (
+        <RigViews frontId="curl-front-hammer" sideId="curl-side" repSeconds={repSeconds} paused={paused} />
+      )}
       {exerciseId === "triceps-extension" && <TricepsAnim />}
       {!KNOWN_IDS.has(exerciseId) && <GenericAnim />}
       <PhaseCaption />
