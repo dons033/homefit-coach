@@ -1,9 +1,21 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Dumbbell, Plate, DumbbellV } from "./bells";
 import { RigFigure } from "./RigFigure";
 import { RIG_DEFS } from "@/lib/poses";
+
+function usePrefersReducedMotion(): boolean {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduce(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setReduce(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return reduce;
+}
 
 /* Procedural stick-figure demos. Doctrine:
  *   - EVERY exercise shows TWO DIFFERENT views (side/front/top/back —
@@ -38,7 +50,7 @@ function Frame({ label, children }: { label: string; children: React.ReactNode }
       <svg viewBox="0 0 200 170" className="h-auto w-full max-w-[360px]" role="img" aria-label={label}>
         {children}
       </svg>
-      <div className="mt-1 text-base font-semibold tracking-wide text-slate-300">{label}</div>
+      <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">{label}</div>
     </div>
   );
 }
@@ -76,62 +88,110 @@ function StandingFigure({ spread = 18 }: { spread?: number }) {
   );
 }
 
-/* ---------------- Bench press: SIDE (end-on bells) + FRONT (feet end) ---------------- */
-function BenchPressAnim() {
+/* ---------------- Bench press: SIDE (end-on bells) + FRONT (feet end) ----------------
+ * Arms morph path geometry (elbows extend — a rigid rotation can't show that).
+ * CSS `d: path()` is still unsupported in Safari, so arms use SMIL
+ * <animate attributeName="d"> with the same path strings and the same
+ * 38/52/88 rep windows; bells ride along on CSS translate (works everywhere).
+ * Pause reaches SMIL via svg.pauseAnimations(); reduced-motion renders rest. */
+const BENCH_SPLINES = "0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1";
+const SIDE_REST = "M65 101 L90 110 L90 77";
+const SIDE_TOP = "M65 101 L68 68 L66 36";
+const FL_REST = "M84 106 L53 115 L53 81";
+const FL_TOP = "M84 106 L81 75 L79 43";
+const FR_REST = "M116 106 L147 115 L147 81";
+const FR_TOP = "M116 106 L119 75 L121 43";
+
+function BenchArmD({ rest, top, dur, on }: { rest: string; top: string; dur: number; on: boolean }) {
+  if (!on) return null;
+  return (
+    <animate
+      attributeName="d"
+      values={`${rest};${top};${top};${rest};${rest}`}
+      keyTimes="0;0.38;0.52;0.88;1"
+      calcMode="spline"
+      keySplines={BENCH_SPLINES}
+      dur={`${dur}s`}
+      repeatCount="indefinite"
+    />
+  );
+}
+
+function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+  const dur = Math.min(5, Math.max(2.5, repSeconds));
+  const motion = !usePrefersReducedMotion();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    boxRef.current?.querySelectorAll("svg").forEach((s) => {
+      try {
+        if (paused) s.pauseAnimations();
+        else s.unpauseAnimations();
+      } catch {
+        /* No SMIL clock here — the CSS pause class already froze the bells. */
+      }
+    });
+  }, [paused]);
   const side = (
     <>
-      <rect x={20} y={112} width={120} height={10} rx={2} fill={DIM} />
-      <rect x={30} y={122} width={8} height={33} fill={DIM} />
-      <rect x={122} y={122} width={8} height={33} fill={DIM} />
-      <ellipse cx={84} cy={100} rx={36} ry={11} fill="none" stroke={INK} strokeWidth={4.5} />
-      <circle cx={68} cy={97} r={2.5} fill={INK} />
-      <circle cx={104} cy={97} r={2.5} fill={INK} />
-      <circle cx={44} cy={88} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
-      <line x1={36} y1={86} x2={30} y2={84} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
-      <line x1={116} y1={100} x2={138} y2={126} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <line x1={138} y1={126} x2={138} y2={154} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <line x1={138} y1={154} x2={147} y2={154} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <path className="hf-traj" d="M87 36 V68" />
-      <g className="hf-anim-press">
-        <line x1={68} y1={97} x2={56} y2={79} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={56} y1={79} x2={64} y2={60} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={104} y1={97} x2={116} y2={79} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={116} y1={79} x2={110} y2={60} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <Plate x={64} y={53} />
-        <Plate x={110} y={53} />
+      <path d="M16 158 H184" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
+      <rect x={18} y={116} width={114} height={9} rx={3} fill={DIM} />
+      <path d="M32 125 V154 M119 125 V154 M24 154 H42 M110 154 H130" fill="none" stroke={DIM} strokeWidth={6} strokeLinecap="round" />
+      {/* Horizontal back and head rest on the pad; both feet meet the floor. */}
+      <path d="M115 105 L144 115 L142 153 L154 153" fill="none" stroke={INK} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" opacity={0.65} />
+      <rect x={47} y={96} width={76} height={19} rx={9.5} fill={INK} />
+      <path d="M42 107 H52 M117 105 L157 114 L156 154 L171 154" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={33} cy={104} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <path d="M33 94 L36 89 L39 95" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
+      {/* In true profile the arms overlap: one silhouette, one end-on plate. */}
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d="M65 101 L68 68 L66 36" />
+        <circle cx={66} cy={36} r={9} />
       </g>
+      <path className="hf-traj" d="M90 77 L66 36" />
+      <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d={SIDE_REST}>
+          <BenchArmD rest={SIDE_REST} top={SIDE_TOP} dur={dur} on={motion} />
+        </path>
+        <g className="hf-bench-side-bell" stroke="none"><Plate x={90} y={77} s={0.82} /></g>
+      </g>
+      <circle cx={65} cy={101} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
     </>
   );
   const front = (
     <>
-      {/* long bench bar behind everything: this figure is LYING down */}
-      <rect x={28} y={92} width={144} height={10} rx={2} fill={DIM} />
-      <rect x={40} y={102} width={8} height={34} fill={DIM} />
-      <rect x={152} y={102} width={8} height={34} fill={DIM} />
-      <circle cx={100} cy={40} r={8} fill="none" stroke={INK} strokeWidth={3.5} />
-      <rect x={84} y={52} width={32} height={46} rx={10} fill="none" stroke={INK} strokeWidth={4.5} />
-      {/* knees bent, feet flat — the unmistakable lying cue */}
-      <line x1={100} y1={96} x2={78} y2={70} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <line x1={78} y1={70} x2={70} y2={100} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <rect x={60} y={97} width={18} height={7} rx={3.5} fill={INK} />
-      <line x1={100} y1={96} x2={122} y2={70} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <line x1={122} y1={70} x2={130} y2={100} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <rect x={122} y={97} width={18} height={7} rx={3.5} fill={INK} />
-      <circle cx={85} cy={60} r={2.5} fill={INK} />
-      <circle cx={115} cy={60} r={2.5} fill={INK} />
-      <path className="hf-traj" d="M80 38 V70" />
-      <path className="hf-traj" d="M120 38 V70" />
-      <g className="hf-anim-press">
-        <line x1={85} y1={60} x2={72} y2={84} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={72} y1={84} x2={80} y2={56} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={115} y1={60} x2={128} y2={84} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <line x1={128} y1={84} x2={120} y2={56} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-        <Dumbbell x={80} y={49} />
-        <Dumbbell x={120} y={49} />
+      <path d="M22 158 H178" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
+      {/* Slightly elevated feet-end projection: pad recedes beneath the body. */}
+      <path d="M78 105 H122 L132 132 H68 Z" fill={DIM} />
+      <rect x={68} y={132} width={64} height={7} rx={2} fill={DIM} />
+      <path d="M81 139 V154 M119 139 V154 M73 154 H127" fill="none" stroke={DIM} strokeWidth={6} strokeLinecap="round" />
+      <circle cx={100} cy={95} r={8} fill="none" stroke={INK} strokeWidth={3.5} />
+      <rect x={82} y={102} width={36} height={23} rx={10} fill={INK} />
+      <path d="M89 121 L62 116 L60 154 L47 154 M111 121 L138 116 L140 154 L153 154" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d="M84 106 L81 75 L79 43 M116 106 L119 75 L121 43" />
+        <rect x={66} y={36} width={26} height={14} rx={3} />
+        <rect x={108} y={36} width={26} height={14} rx={3} />
       </g>
+      <path className="hf-traj" d="M53 81 L79 43 M147 81 L121 43" />
+      <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d={FL_REST}>
+          <BenchArmD rest={FL_REST} top={FL_TOP} dur={dur} on={motion} />
+        </path>
+        <path d={FR_REST}>
+          <BenchArmD rest={FR_REST} top={FR_TOP} dur={dur} on={motion} />
+        </path>
+        <g className="hf-bench-front-left-bell" stroke="none"><Dumbbell x={53} y={81} s={0.75} /></g>
+        <g className="hf-bench-front-right-bell" stroke="none"><Dumbbell x={147} y={81} s={0.75} /></g>
+      </g>
+      <circle cx={84} cy={106} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
+      <circle cx={116} cy={106} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
     </>
   );
-  return <Views aLabel="Side" bLabel="Front" a={side} b={front} />;
+  return (
+    <div ref={boxRef}>
+      <Views aLabel="Side" bLabel="Feet end" a={side} b={front} />
+    </div>
+  );
 }
 
 /* ---------------- One-arm row: SIDE + BACK (no nose tick = facing away) ---------------- */
@@ -274,11 +334,11 @@ function RigViews({
     <div className="grid w-full max-w-3xl grid-cols-2 items-end gap-6 max-sm:grid-cols-1">
       <div className="flex min-w-0 flex-col items-center">
         <RigFigure joints={front.joints} body={front.body} repSeconds={repSeconds} paused={paused} />
-        <div className="mt-1 text-base font-semibold tracking-wide text-slate-300">Front</div>
+        <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">Front</div>
       </div>
       <div className="flex min-w-0 flex-col items-center">
         <RigFigure joints={side.joints} body={side.body} repSeconds={repSeconds} paused={paused} />
-        <div className="mt-1 text-base font-semibold tracking-wide text-slate-300">Side</div>
+        <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">Side</div>
       </div>
     </div>
   );
@@ -349,13 +409,17 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
   return (
     <svg viewBox="0 0 80 72" className="h-14 w-16 shrink-0" aria-hidden="true">
       {exerciseId === "bench-press" && (
-        <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
-          <rect x={8} y={44} width={50} height={5} rx={1} fill={DIM} stroke="none" />
-          <ellipse cx={33} cy={39} rx={15} ry={5} />
-          <circle cx={18} cy={34} r={4.5} />
-          <g className="hf-anim-press">
-            <line x1={32} y1={39} x2={32} y2={20} />
-            <circle cx={32} cy={17} r={5} fill={BLUE} stroke="none" />
+        <g transform="scale(0.4)" stroke={INK} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <rect x={18} y={116} width={114} height={9} rx={3} fill={DIM} stroke="none" />
+          <path d="M32 125 V154 M119 125 V154 M16 158 H184" stroke={DIM} strokeWidth={5} />
+          <rect x={47} y={96} width={76} height={19} rx={9.5} fill={INK} stroke="none" />
+          <circle cx={33} cy={104} r={10} strokeWidth={4} />
+          <path d="M42 107 H52 M117 105 L157 114 L156 154 L171 154" />
+          {/* Static rest pose: the sidebar thumb identifies the move; the
+              full-size figure teaches the motion. No SMIL clock lives here. */}
+          <g stroke={BLUE}>
+            <path d="M65 101 L90 110 L90 77" />
+            <g stroke="none"><Plate x={90} y={77} s={0.82} /></g>
           </g>
         </g>
       )}
@@ -491,11 +555,11 @@ function GenericAnim() {
  *  Lives inside the --rep-dur wrapper so it stays in sync with the figure. */
 export function PhaseCaption() {
   return (
-    <div className="relative mx-auto mt-1 h-7 w-full max-w-3xl text-center text-lg font-bold uppercase tracking-[0.2em]" aria-hidden="true">
-      <span className="hf-cap-lift absolute inset-0 text-green-300">Lift ↑</span>
-      <span className="hf-cap-hold absolute inset-0 text-sky-300">Hold</span>
-      <span className="hf-cap-lower absolute inset-0 text-amber-300">Lower ↓</span>
-      <span className="hf-cap-bottom absolute inset-0 text-slate-400">Bottom</span>
+    <div className="relative mx-auto mt-2 h-8 w-full max-w-3xl rounded-full border border-slate-800 bg-slate-900/70 text-center text-lg font-bold uppercase tracking-[0.2em]" aria-hidden="true">
+      <span className="hf-cap-lift absolute inset-0 py-0.5 text-green-300">Lift ↑</span>
+      <span className="hf-cap-hold absolute inset-0 py-0.5 text-sky-300">Hold</span>
+      <span className="hf-cap-lower absolute inset-0 py-0.5 text-amber-300">Lower ↓</span>
+      <span className="hf-cap-bottom absolute inset-0 py-0.5 text-slate-400">Bottom</span>
     </div>
   );
 }
@@ -546,7 +610,7 @@ export function ExerciseAnimation({
       style={{ "--rep-dur": `${Math.min(5, Math.max(2.5, repSeconds))}s` } as CSSProperties}
       aria-hidden="false"
     >
-      {exerciseId === "bench-press" && <BenchPressAnim />}
+      {exerciseId === "bench-press" && <BenchPressAnim repSeconds={repSeconds} paused={paused} />}
       {exerciseId === "one-arm-row" && <RowAnim />}
       {exerciseId === "shoulder-press" && <ShoulderPressAnim />}
       {exerciseId === "lateral-raise" && <LateralRaiseAnim />}

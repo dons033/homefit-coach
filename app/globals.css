@@ -116,6 +116,26 @@ body {
 }
 
 .hf-anim-press { animation: hf-press var(--rep-dur, 4s) ease-in-out infinite; }
+/* Bench press: shoulders stay pinned while elbows extend, on the existing
+ * press windows and rep duration. Arms morph path geometry via SMIL
+ * <animate> in ExerciseAnimation.tsx — CSS `d: path()` is still unsupported
+ * in Safari, so it can't live here. Bells ride along on CSS translate,
+ * which works everywhere. */
+@keyframes hf-bench-side-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(-24px, -41px); }
+}
+@keyframes hf-bench-front-left-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(26px, -38px); }
+}
+@keyframes hf-bench-front-right-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(-26px, -38px); }
+}
+.hf-bench-side-bell { animation: hf-bench-side-bell var(--rep-dur, 4s) ease-in-out infinite; }
+.hf-bench-front-left-bell { animation: hf-bench-front-left-bell var(--rep-dur, 4s) ease-in-out infinite; }
+.hf-bench-front-right-bell { animation: hf-bench-front-right-bell var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-row { animation: hf-row var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-raise-l { animation: hf-raise var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-raise-r { animation: hf-raise-r var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
@@ -131,6 +151,39 @@ body {
 /* Workout paused: freeze every figure mid-pose. */
 .hf-paused, .hf-paused * { animation-play-state: paused !important; }
 
+/* Mover highlight: every animated limb group pops in sky-blue with a soft glow
+ * so the eye goes to WHAT MOVES. CSS `stroke` beats the inline stroke attr,
+ * which is exactly what we want — these selectors recolor all mover groups
+ * (press / row / raise / curl / tri, full-size and minis) with no TSX edits.
+ * Future custom figures get the same treatment via the .hf-mover opt-in. */
+.hf-anim-press line,
+.hf-anim-row line,
+.hf-anim-raise-l line,
+.hf-anim-raise-r line,
+.hf-anim-raiseFL line,
+.hf-anim-raiseFR line,
+.hf-anim-curl line,
+.hf-anim-curlside line,
+.hf-anim-tri line,
+.hf-anim-trirear line,
+.hf-mover line { stroke: #38bdf8; }
+.hf-anim-press,
+.hf-anim-row,
+.hf-anim-raise-l,
+.hf-anim-raise-r,
+.hf-anim-raiseFL,
+.hf-anim-raiseFR,
+.hf-anim-curl,
+.hf-anim-curlside,
+.hf-anim-tri,
+.hf-anim-trirear,
+.hf-mover,
+.rg-mover { filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.45)); }
+
+/* ROM endpoint ghost is rendered by RigFigure at 0.22 opacity; hand-drawn
+ * figures use this class for their static start/end outlines. */
+.hf-ghost { opacity: 0.22; }
+
 /* Rep-phase captions: exactly one word visible at a time. Inactive = 0
  * (12% ghosting proved readable enough to muddy the active word). */
 @keyframes hf-cap-lift { 0%, 36% { opacity: 1; } 42%, 100% { opacity: 0; } }
@@ -144,11 +197,12 @@ body {
 .hf-cap-lower { animation: hf-cap-lower var(--rep-dur, 4s) linear infinite; }
 .hf-cap-bottom { animation: hf-cap-bottom var(--rep-dur, 4s) linear infinite; }
 
-/* Dotted bell-path guides (static, calm). */
+/* Dotted bell-path guides (static, calm). Brightened one step so the path
+ * reads at workout distance without competing with the mover. */
 .hf-traj {
   fill: none;
-  stroke: #475569;
-  stroke-width: 2;
+  stroke: #64748b;
+  stroke-width: 2.5;
   stroke-dasharray: 2 7;
   stroke-linecap: round;
   opacity: 0.9;
@@ -163,6 +217,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hf-bench-side-bell,
+  .hf-bench-front-left-bell,
+  .hf-bench-front-right-bell,
   .hf-anim-press,
   .hf-anim-row,
   .hf-anim-raise-l,

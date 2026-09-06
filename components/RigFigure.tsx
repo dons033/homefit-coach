@@ -14,6 +14,10 @@ import { useId, type CSSProperties, type ReactNode } from "react";
 
 export const INK = "#e2e8f0";
 export const DIM = "#64748b";
+/** Mover accent: every animated limb + its bell renders in this color so the
+ *  user's eye goes straight to WHAT MOVES. Static body stays INK. */
+export const ACTIVE = "#38bdf8";
+export const ACTIVE_GHOST = "#38bdf8";
 
 export type RigJoint = {
   id: string;
@@ -28,18 +32,18 @@ export type RigJoint = {
 
 /* ---- cartoon parts ---- */
 
-export function Limb({ x1, y1, x2, y2, w = 9 }: { x1: number; y1: number; x2: number; y2: number; w?: number }) {
+export function Limb({ x1, y1, x2, y2, w = 9, c = INK }: { x1: number; y1: number; x2: number; y2: number; w?: number; c?: string }) {
   return (
-    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={INK} strokeWidth={w} strokeLinecap="round" />
+    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeWidth={w} strokeLinecap="round" />
   );
 }
 
-export function Dot({ x, y, r = 3.5 }: { x: number; y: number; r?: number }) {
-  return <circle cx={x} cy={y} r={r} fill={INK} />;
+export function Dot({ x, y, r = 3.5, c = INK }: { x: number; y: number; r?: number; c?: string }) {
+  return <circle cx={x} cy={y} r={r} fill={c} />;
 }
 
-export function Mitt({ x, y }: { x: number; y: number }) {
-  return <circle cx={x} cy={y} r={6.5} fill={INK} />;
+export function Mitt({ x, y, c = INK }: { x: number; y: number; c?: string }) {
+  return <circle cx={x} cy={y} r={6.5} fill={c} />;
 }
 
 export function HeadFront({ x, y }: { x: number; y: number }) {
@@ -121,6 +125,8 @@ export function RigFigure({
   /** Freeze at rep fraction 0..1 (lab scrub). Null = play. */
   phase = null,
   className = "",
+  /** Faint ROM endpoint behind each mover — teaches range without a second view. */
+  ghost = true,
 }: {
   joints: RigJoint[];
   body: ReactNode;
@@ -128,6 +134,7 @@ export function RigFigure({
   paused?: boolean;
   phase?: number | null;
   className?: string;
+  ghost?: boolean;
 }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const dur = Math.min(6, Math.max(1.5, repSeconds));
@@ -145,10 +152,21 @@ export function RigFigure({
         style={{ "--rep-dur": `${dur}s` } as CSSProperties}
       >
         {body}
+        {ghost &&
+          joints.map((j) => (
+            <g
+              key={`${j.id}-ghost`}
+              opacity={0.22}
+              transform={`rotate(${j.to - j.from} ${j.pivot[0]} ${j.pivot[1]})`}
+              aria-hidden="true"
+            >
+              {j.draw}
+            </g>
+          ))}
         {joints.map((j) => (
           <g
             key={j.id}
-            className={`rg${uid}${j.id}`}
+            className={`rg${uid}${j.id} rg-mover`}
             style={{
               transformBox: "view-box",
               transformOrigin: `${j.pivot[0]}px ${j.pivot[1]}px`,
@@ -158,6 +176,8 @@ export function RigFigure({
             } as CSSProperties}
           >
             {j.draw}
+            {/* hinge dot: marks the ONLY joint that should move */}
+            <circle cx={j.pivot[0]} cy={j.pivot[1]} r={4.5} fill={ACTIVE} stroke="#0a1120" strokeWidth={1.5} />
           </g>
         ))}
       </svg>

@@ -10,6 +10,7 @@
 import type { ReactNode } from "react";
 import {
   INK,
+  ACTIVE,
   Limb,
   Dot,
   Mitt,
@@ -117,8 +118,8 @@ export const RIG_DEFS: Record<string, RigDef> = {
         to: -135,
         draw: (
           <>
-            <Limb x1={80} y1={86} x2={80} y2={114} />
-            <Mitt x={80} y={115} />
+            <Limb x1={80} y1={86} x2={80} y2={114} c={ACTIVE} w={10} />
+            <Mitt x={80} y={115} c={ACTIVE} />
             <Dumbbell x={80} y={122} s={0.85} />
           </>
         ),
@@ -130,15 +131,15 @@ export const RIG_DEFS: Record<string, RigDef> = {
         to: -135,
         draw: (
           <>
-            <Limb x1={120} y1={86} x2={120} y2={114} />
-            <Mitt x={120} y={115} />
+            <Limb x1={120} y1={86} x2={120} y2={114} c={ACTIVE} w={10} />
+            <Mitt x={120} y={115} c={ACTIVE} />
             <Dumbbell x={120} y={122} s={0.85} />
           </>
         ),
       },
     ],
     notes: [
-      "Elbows pinned at sides — no forward drift through the rep.",
+      "Blue forearms are the ONLY movers — elbows pinned at sides, no forward drift.",
       "Bells finish at shoulder height, slightly outside the shoulders.",
       "Palms face forward the whole way; wrists straight.",
       "Full extension at the bottom — no half-reps.",
@@ -163,8 +164,8 @@ export const RIG_DEFS: Record<string, RigDef> = {
         to: -120,
         draw: (
           <>
-            <Limb x1={84} y1={86} x2={82} y2={114} />
-            <Mitt x={82} y={115} />
+            <Limb x1={84} y1={86} x2={82} y2={114} c={ACTIVE} w={10} />
+            <Mitt x={82} y={115} c={ACTIVE} />
             <Plate x={82} y={122} s={0.85} />
           </>
         ),
@@ -176,8 +177,8 @@ export const RIG_DEFS: Record<string, RigDef> = {
         to: -120,
         draw: (
           <>
-            <Limb x1={116} y1={86} x2={118} y2={114} />
-            <Mitt x={118} y={115} />
+            <Limb x1={116} y1={86} x2={118} y2={114} c={ACTIVE} w={10} />
+            <Mitt x={118} y={115} c={ACTIVE} />
             <Plate x={118} y={122} s={0.85} />
           </>
         ),
@@ -208,15 +209,15 @@ export const RIG_DEFS: Record<string, RigDef> = {
         to: 135,
         draw: (
           <>
-            <Limb x1={72} y1={84} x2={72} y2={112} />
-            <Mitt x={72} y={113} />
+            <Limb x1={72} y1={84} x2={72} y2={112} c={ACTIVE} w={10} />
+            <Mitt x={72} y={113} c={ACTIVE} />
             <Plate x={72} y={120} />
           </>
         ),
       },
     ],
     notes: [
-      "Upper arm vertical the whole rep — the only mover is the elbow.",
+      "Blue forearm is the ONLY mover — upper arm stays vertical.",
       "Forearm sweeps forward-up about 135°.",
       "No torso swing; hips stay over the feet.",
     ],
