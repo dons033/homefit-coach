@@ -69,26 +69,32 @@ function Pair({
   );
 }
 
-/* ---------------- Bench press: flat back, bells chest ↔ overhead ---------------- */
+/* ---------------- Bench press: flat back, bells chest ↔ overhead ----------------
+ * Side view, head left. Bells kept well apart (merged bells read as a
+ * barbell), hands visibly landing on the bells, elbows kinked down-out. */
 function BenchPressAnim() {
   const pose = (cls: string) => (
     <>
-      <rect x={20} y={110} width={120} height={10} rx={2} fill={DIM} />
-      <rect x={30} y={120} width={8} height={35} fill={DIM} />
-      <rect x={122} y={120} width={8} height={35} fill={DIM} />
-      <ellipse cx={85} cy={100} rx={38} ry={12} fill="none" stroke={INK} strokeWidth={3.5} />
-      <circle cx={45} cy={88} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
-      <line x1={37} y1={86} x2={31} y2={84} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
-      <line x1={120} y1={100} x2={140} y2={125} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      <line x1={140} y1={125} x2={140} y2={155} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      <path className="hf-traj" d="M94 40 V74" />
+      <rect x={20} y={112} width={120} height={10} rx={2} fill={DIM} />
+      <rect x={30} y={122} width={8} height={33} fill={DIM} />
+      <rect x={122} y={122} width={8} height={33} fill={DIM} />
+      {/* torso: hollow mass + shoulder joints where the arms visibly start */}
+      <ellipse cx={84} cy={100} rx={36} ry={11} fill="none" stroke={INK} strokeWidth={4.5} />
+      <circle cx={68} cy={97} r={2.5} fill={INK} />
+      <circle cx={104} cy={97} r={2.5} fill={INK} />
+      <circle cx={44} cy={88} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
+      <line x1={36} y1={86} x2={30} y2={84} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
+      <line x1={116} y1={100} x2={138} y2={126} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <line x1={138} y1={126} x2={138} y2={154} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <line x1={138} y1={154} x2={147} y2={154} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <path className="hf-traj" d="M87 36 V68" />
       <g className={cls}>
-        <line x1={84} y1={98} x2={74} y2={78} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <line x1={74} y1={78} x2={80} y2={58} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <line x1={104} y1={98} x2={114} y2={78} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <line x1={114} y1={78} x2={108} y2={58} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={80} y={52} />
-        <Dumbbell x={108} y={52} />
+        <line x1={68} y1={97} x2={56} y2={79} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+        <line x1={56} y1={79} x2={64} y2={60} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+        <line x1={104} y1={97} x2={116} y2={79} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+        <line x1={116} y1={79} x2={110} y2={60} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+        <Dumbbell x={64} y={53} />
+        <Dumbbell x={110} y={53} />
       </g>
     </>
   );
@@ -178,23 +184,23 @@ function CurlAnim() {
   const pose = (cls: string) => (
     <>
       <StandingFigure />
-      <line x1={100} y1={62} x2={86} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={62} x2={114} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M86 120 A36 36 0 0 1 70 64" />
-      <path className="hf-traj" d="M114 120 A36 36 0 0 0 130 64" />
+      <line x1={100} y1={62} x2={82} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={62} x2={118} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <path className="hf-traj" d="M82 120 A38 38 0 0 1 66 62" />
+      <path className="hf-traj" d="M118 120 A38 38 0 0 0 134 62" />
       <g
         className={cls}
-        style={{ transformBox: "view-box", transformOrigin: "86px 86px" }}
+        style={{ transformBox: "view-box", transformOrigin: "82px 86px" }}
       >
-        <line x1={86} y1={86} x2={86} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={86} y={120} />
+        <line x1={82} y1={86} x2={82} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={82} y={120} />
       </g>
       <g
         className={cls}
-        style={{ transformBox: "view-box", transformOrigin: "114px 86px" }}
+        style={{ transformBox: "view-box", transformOrigin: "118px 86px" }}
       >
-        <line x1={114} y1={86} x2={114} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={114} y={120} />
+        <line x1={118} y1={86} x2={118} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={118} y={120} />
       </g>
     </>
   );

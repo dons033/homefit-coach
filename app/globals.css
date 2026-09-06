@@ -88,12 +88,14 @@ body {
 /* Workout paused: freeze every figure mid-pose. */
 .hf-paused, .hf-paused * { animation-play-state: paused !important; }
 
-/* Rep-phase captions: LIFT → HOLD → LOWER → BOTTOM, on the same tempo. */
-@keyframes hf-cap-lift { 0%, 36% { opacity: 1; } 42%, 94% { opacity: 0.12; } 100% { opacity: 1; } }
-@keyframes hf-cap-hold { 0%, 36% { opacity: 0.12; } 40%, 50% { opacity: 1; } 56%, 100% { opacity: 0.12; } }
-@keyframes hf-cap-lower { 0%, 50% { opacity: 0.12; } 56%, 86% { opacity: 1; } 92%, 100% { opacity: 0.12; } }
-@keyframes hf-cap-bottom { 0%, 86% { opacity: 0.12; } 90%, 97% { opacity: 1; } 100% { opacity: 0.12; } }
-.hf-cap-lift, .hf-cap-hold, .hf-cap-lower, .hf-cap-bottom { opacity: 0.12; }
+/* Rep-phase captions: exactly one word visible at a time. Inactive = 0
+ * (12% ghosting proved readable enough to muddy the active word). */
+@keyframes hf-cap-lift { 0%, 36% { opacity: 1; } 42%, 100% { opacity: 0; } }
+@keyframes hf-cap-hold { 0%, 36% { opacity: 0; } 40%, 50% { opacity: 1; } 56%, 100% { opacity: 0; } }
+@keyframes hf-cap-lower { 0%, 50% { opacity: 0; } 56%, 86% { opacity: 1; } 92%, 100% { opacity: 0; } }
+@keyframes hf-cap-bottom { 0%, 86% { opacity: 0; } 90%, 97% { opacity: 1; } 100% { opacity: 0; } }
+.hf-cap-lift { opacity: 1; }
+.hf-cap-hold, .hf-cap-lower, .hf-cap-bottom { opacity: 0; }
 .hf-cap-lift { animation: hf-cap-lift var(--rep-dur, 4s) linear infinite; }
 .hf-cap-hold { animation: hf-cap-hold var(--rep-dur, 4s) linear infinite; }
 .hf-cap-lower { animation: hf-cap-lower var(--rep-dur, 4s) linear infinite; }
