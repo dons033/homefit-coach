@@ -95,15 +95,12 @@ function StandingFigure({ spread = 18 }: { spread?: number }) {
  * <animate attributeName="d"> with the same path strings and the same
  * 38/52/88 rep windows; bells ride along on CSS translate (works everywhere).
  * Pause reaches SMIL via svg.pauseAnimations(); reduced-motion renders rest. */
-const BENCH_SPLINES = "0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1";
-const SIDE_REST = "M65 101 L90 110 L90 77";
-const SIDE_TOP = "M65 101 L68 68 L66 36";
-const FL_REST = "M84 106 L53 115 L53 81";
-const FL_TOP = "M84 106 L81 75 L79 43";
-const FR_REST = "M116 106 L147 115 L147 81";
-const FR_TOP = "M116 106 L119 75 L121 43";
+const MORPH_SPLINES = "0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1";
 
-function BenchArmD({ rest, top, dur, on }: { rest: string; top: string; dur: number; on: boolean }) {
+/** Arm path morph rest→top on the shared 38/52/88 rep windows (SMIL — the
+ *  CSS `d: path()` property is still unsupported in Safari). Omitted under
+ *  reduced motion so the arm rests at its drawn geometry. */
+function ArmMorphD({ rest, top, dur, on }: { rest: string; top: string; dur: number; on: boolean }) {
   if (!on) return null;
   return (
     <animate
@@ -111,24 +108,28 @@ function BenchArmD({ rest, top, dur, on }: { rest: string; top: string; dur: num
       values={`${rest};${top};${top};${rest};${rest}`}
       keyTimes="0;0.38;0.52;0.88;1"
       calcMode="spline"
-      keySplines={BENCH_SPLINES}
+      keySplines={MORPH_SPLINES}
       dur={`${dur}s`}
       repeatCount="indefinite"
     />
   );
 }
 
-function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
-  const dur = Math.min(5, Math.max(2.5, repSeconds));
-  const motion = !usePrefersReducedMotion();
-  const boxRef = useRef<HTMLDivElement>(null);
+/** SMIL's clock can start before the first rendered CSS frame, so align it
+ *  to a CSS-animated element (bells share the document timeline). Also
+ *  freezes SMIL on pause — the CSS bells freeze via .hf-paused. */
+function useSmilClock(
+  boxRef: React.RefObject<HTMLDivElement | null>,
+  selector: string,
+  paused: boolean,
+  motion: boolean,
+  dur: number,
+) {
   useLayoutEffect(() => {
     let cancelled = false;
     boxRef.current?.querySelectorAll("svg").forEach((s) => {
       try {
-        // SMIL's SVG clock can begin before CSS's first rendered frame.
-        // Use the bell's clock so wrists and bells share the same rep instant.
-        const bell = s.querySelector<SVGGElement>("[class^='hf-bench-']");
+        const bell = s.querySelector(selector);
         const animation = bell?.getAnimations()[0];
         const align = () => {
           const time = animation?.currentTime;
@@ -140,11 +141,24 @@ function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: numbe
         // CSS pause/play settles on the next frame; use its final clock value.
         void animation?.ready.then(align, () => {});
       } catch {
-        /* No SMIL clock here — the CSS pause class already froze the bells. */
+        /* No CSS clock in this svg — nothing to align to. */
       }
     });
     return () => { cancelled = true; };
-  }, [paused, motion, dur]);
+  }, [boxRef, selector, paused, motion, dur]);
+}
+const SIDE_REST = "M65 101 L90 110 L90 77";
+const SIDE_TOP = "M65 101 L68 68 L66 36";
+const FL_REST = "M84 106 L53 115 L53 81";
+const FL_TOP = "M84 106 L81 75 L79 43";
+const FR_REST = "M116 106 L147 115 L147 81";
+const FR_TOP = "M116 106 L119 75 L121 43";
+
+function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+  const dur = Math.min(5, Math.max(2.5, repSeconds));
+  const motion = !usePrefersReducedMotion();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useSmilClock(boxRef, "[class^='hf-bench-']", paused, motion, dur);
   const side = (
     <>
       <path d="M16 158 H184" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
@@ -164,7 +178,7 @@ function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: numbe
       <path className="hf-traj" d="M90 77 L66 36" />
       <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
         <path d={SIDE_REST}>
-          <BenchArmD rest={SIDE_REST} top={SIDE_TOP} dur={dur} on={motion} />
+          <ArmMorphD rest={SIDE_REST} top={SIDE_TOP} dur={dur} on={motion} />
         </path>
         <g className="hf-bench-side-bell" stroke="none"><Plate x={90} y={77} s={0.82} /></g>
       </g>
@@ -189,10 +203,10 @@ function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: numbe
       <path className="hf-traj" d="M53 81 L79 43 M147 81 L121 43" />
       <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
         <path d={FL_REST}>
-          <BenchArmD rest={FL_REST} top={FL_TOP} dur={dur} on={motion} />
+          <ArmMorphD rest={FL_REST} top={FL_TOP} dur={dur} on={motion} />
         </path>
         <path d={FR_REST}>
-          <BenchArmD rest={FR_REST} top={FR_TOP} dur={dur} on={motion} />
+          <ArmMorphD rest={FR_REST} top={FR_TOP} dur={dur} on={motion} />
         </path>
         <g className="hf-bench-front-left-bell" stroke="none"><Dumbbell x={53} y={81} s={0.75} /></g>
         <g className="hf-bench-front-right-bell" stroke="none"><Dumbbell x={147} y={81} s={0.75} /></g>
@@ -209,35 +223,11 @@ function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: numbe
 }
 
 /* ---------------- One-arm row: SIDE + BACK (no nose tick = facing away) ---------------- */
-function RowArmD({ rest, top, dur, on }: { rest: string; top: string; dur: number; on: boolean }) {
-  if (!on) return null;
-  return (
-    <animate attributeName="d" values={`${rest};${top};${top};${rest};${rest}`}
-      keyTimes="0;0.38;0.52;0.88;1" calcMode="spline"
-      keySplines="0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1"
-      dur={`${dur}s`} repeatCount="indefinite" />
-  );
-}
-
 function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
   const dur = Math.min(5, Math.max(2.5, repSeconds));
   const motion = !usePrefersReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    let cancelled = false;
-    boxRef.current?.querySelectorAll("svg").forEach((svg) => {
-      const animation = svg.querySelector("[data-row-bell]")?.getAnimations()[0];
-      const align = () => {
-        const time = animation?.currentTime;
-        if (!cancelled && typeof time === "number") svg.setCurrentTime(time / 1000);
-      };
-      align();
-      if (paused) svg.pauseAnimations();
-      else svg.unpauseAnimations();
-      void animation?.ready.then(align, () => {});
-    });
-    return () => { cancelled = true; };
-  }, [paused, motion, dur]);
+  useSmilClock(boxRef, "[data-row-bell]", paused, motion, dur);
   const sideRest = "M76 76 L78 108 L80 139";
   const sideTop = "M76 76 L110 62 L106 94";
   const backRest = "M122 77 L124 108 L126 139";
@@ -261,7 +251,7 @@ function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paus
       </g>
       <path className="hf-traj" d="M80 139 L106 94" />
       <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
-        <path d={sideRest}><RowArmD rest={sideRest} top={sideTop} dur={dur} on={motion} /></path>
+        <path d={sideRest}><ArmMorphD rest={sideRest} top={sideTop} dur={dur} on={motion} /></path>
         <g data-row-bell className={rowStyles.sideBell} stroke="none"><Dumbbell x={80} y={139} s={0.75} /></g>
       </g>
       <circle cx={76} cy={76} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
@@ -286,7 +276,7 @@ function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paus
       </g>
       <path className="hf-traj" d="M126 139 L142 98" />
       <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
-        <path d={backRest}><RowArmD rest={backRest} top={backTop} dur={dur} on={motion} /></path>
+        <path d={backRest}><ArmMorphD rest={backRest} top={backTop} dur={dur} on={motion} /></path>
         <g data-row-bell className={rowStyles.backBell} stroke="none"><Plate x={126} y={139} s={0.82} /></g>
       </g>
       <circle cx={122} cy={77} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
@@ -295,41 +285,81 @@ function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paus
   return <div ref={boxRef}><Views aLabel="Side" bLabel="Back" a={side} b={back} /></div>;
 }
 
-/* ---------------- Shoulder press: FRONT (bars) + SIDE profile (plates) ---------------- */
-function ShoulderPressAnim() {
+/* ---------------- Shoulder press: FRONT (bars) + SIDE profile (plates) ----------------
+ * Rack: bells at shoulder height just outside the shoulders, forearms
+ * vertical, elbows out-front. Lockout: arms straight, bells nearly touching
+ * overhead. The arm CHANGES SHAPE (bent → straight), so arms morph via SMIL
+ * (bench pattern); bells ride on CSS translate. */
+const SP_FRONT_REST_L = "M85 58 L74 78 L74 56";
+const SP_FRONT_TOP_L = "M85 58 L86 37 L86 16";
+const SP_FRONT_REST_R = "M115 58 L126 78 L126 56";
+const SP_FRONT_TOP_R = "M115 58 L114 37 L114 16";
+const SP_SIDE_REST = "M76 56 L66 76 L66 58";
+const SP_SIDE_TOP = "M76 56 L74 35 L72 14";
+
+function ShoulderPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+  const dur = Math.min(5, Math.max(2.5, repSeconds));
+  const motion = !usePrefersReducedMotion();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useSmilClock(boxRef, "[data-sp-bell]", paused, motion, dur);
   const front = (
     <>
-      <StandingFigure />
-      <line x1={100} y1={62} x2={72} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={62} x2={128} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M72 28 V58" />
-      <path className="hf-traj" d="M128 28 V58" />
-      <g className="hf-anim-press">
-        <line x1={72} y1={62} x2={72} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <line x1={128} y1={62} x2={128} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={72} y={34} />
-        <Dumbbell x={128} y={34} />
+      <path d="M30 157 H170" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
+      <circle cx={100} cy={35} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} />
+      <path d="M93 95 L89 150 M107 95 L111 150" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <ellipse cx={85} cy={151} rx={9} ry={4.5} fill={INK} />
+      <ellipse cx={115} cy={151} rx={9} ry={4.5} fill={INK} />
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d={SP_FRONT_TOP_L} />
+        <path d={SP_FRONT_TOP_R} />
+        <rect x={72} y={5} width={27} height={15} rx={4} />
+        <rect x={101} y={5} width={27} height={15} rx={4} />
       </g>
+      <path className="hf-traj" d="M74 51 L86 12" />
+      <path className="hf-traj" d="M126 51 L114 12" />
+      <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d={SP_FRONT_REST_L}>
+          <ArmMorphD rest={SP_FRONT_REST_L} top={SP_FRONT_TOP_L} dur={dur} on={motion} />
+        </path>
+        <path d={SP_FRONT_REST_R}>
+          <ArmMorphD rest={SP_FRONT_REST_R} top={SP_FRONT_TOP_R} dur={dur} on={motion} />
+        </path>
+        <g data-sp-bell className="hf-sp-front-left-bell" stroke="none"><Dumbbell x={74} y={51} s={0.75} /></g>
+        <g className="hf-sp-front-right-bell" stroke="none"><Dumbbell x={126} y={51} s={0.75} /></g>
+      </g>
+      <circle cx={85} cy={58} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
+      <circle cx={115} cy={58} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
     </>
   );
   const side = (
     <>
-      <circle cx={66} cy={32} r={10} fill="none" stroke={INK} strokeWidth={4} />
-      <line x1={57} y1={30} x2={52} y2={28} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
-      <line x1={76} y1={44} x2={76} y2={106} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <line x1={76} y1={106} x2={64} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={76} y1={106} x2={88} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={64} y1={150} x2={56} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={88} y1={150} x2={96} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={76} y1={60} x2={94} y2={74} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M94 36 V68" />
-      <g className="hf-anim-press">
-        <line x1={94} y1={74} x2={94} y2={50} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Plate x={94} y={44} />
+      <path d="M30 157 H170" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
+      <circle cx={62} cy={32} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <path d="M53 35 L49 40 L55 41" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
+      <rect x={68} y={44} width={17} height={51} rx={8.5} fill={INK} />
+      <path d="M75 93 L64 150 M75 93 L87 150" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <ellipse cx={58} cy={151} rx={9} ry={4.5} fill={INK} />
+      <ellipse cx={81} cy={151} rx={9} ry={4.5} fill={INK} />
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d={SP_SIDE_TOP} />
+        <circle cx={72} cy={10} r={10} />
       </g>
+      <path className="hf-traj" d="M66 52 L72 10" />
+      <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d={SP_SIDE_REST}>
+          <ArmMorphD rest={SP_SIDE_REST} top={SP_SIDE_TOP} dur={dur} on={motion} />
+        </path>
+        <g data-sp-bell className="hf-sp-side-bell" stroke="none"><Plate x={66} y={52} s={0.9} /></g>
+      </g>
+      <circle cx={76} cy={56} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
     </>
   );
-  return <Views aLabel="Front" bLabel="Side" a={front} b={side} />;
+  return (
+    <div ref={boxRef}>
+      <Views aLabel="Front" bLabel="Side" a={front} b={side} />
+    </div>
+  );
 }
 
 /* ---------------- Lateral raise: FRONT (plates) + TOP (bars) ----------------
@@ -496,18 +526,16 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
         </g>
       )}
       {exerciseId === "shoulder-press" && (
-        <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
-          <circle cx={40} cy={12} r={5} />
-          <line x1={40} y1={18} x2={40} y2={48} strokeWidth={3} />
-          <line x1={40} y1={48} x2={33} y2={64} />
-          <line x1={40} y1={48} x2={47} y2={64} />
-          <g className="hf-anim-press">
-            <line x1={40} y1={28} x2={30} y2={26} />
-            <line x1={40} y1={28} x2={50} y2={26} />
-            <line x1={30} y1={26} x2={30} y2={14} />
-            <line x1={50} y1={26} x2={50} y2={14} />
-            <circle cx={30} cy={12} r={4} fill={BLUE} stroke="none" />
-            <circle cx={50} cy={12} r={4} fill={BLUE} stroke="none" />
+        <g transform="scale(0.4)" stroke={INK} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M30 157 H170" stroke={DIM} strokeWidth={5} />
+          <circle cx={100} cy={35} r={10} strokeWidth={4} />
+          <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} stroke="none" />
+          <path d="M93 95 L89 150 M107 95 L111 150" />
+          {/* Static rack pose identifies the move; the full figure teaches it. */}
+          <g stroke={BLUE}>
+            <path d="M85 58 L74 78 L74 56" />
+            <path d="M115 58 L126 78 L126 56" />
+            <g stroke="none"><Dumbbell x={74} y={51} s={0.75} /><Dumbbell x={126} y={51} s={0.75} /></g>
           </g>
         </g>
       )}
@@ -673,7 +701,7 @@ export function ExerciseAnimation({
     >
       {exerciseId === "bench-press" && <BenchPressAnim repSeconds={repSeconds} paused={paused} />}
       {exerciseId === "one-arm-row" && <RowAnim repSeconds={repSeconds} paused={paused} />}
-      {exerciseId === "shoulder-press" && <ShoulderPressAnim />}
+      {exerciseId === "shoulder-press" && <ShoulderPressAnim repSeconds={repSeconds} paused={paused} />}
       {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
       {exerciseId === "biceps-curl" && (
         <RigViews frontId="curl-front-regular" sideId="curl-side" repSeconds={repSeconds} paused={paused} />

@@ -136,6 +136,23 @@ body {
 .hf-bench-side-bell { animation: hf-bench-side-bell var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-bench-front-left-bell { animation: hf-bench-front-left-bell var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-bench-front-right-bell { animation: hf-bench-front-right-bell var(--rep-dur, 4s) ease-in-out infinite; }
+/* Shoulder press: arms morph via SMIL (ExerciseAnimation.tsx); bells ride
+ * on CSS translate from rack (shoulder height) to lockout (nearly touching). */
+@keyframes hf-sp-front-left-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(12px, -39px); }
+}
+@keyframes hf-sp-front-right-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(-12px, -39px); }
+}
+@keyframes hf-sp-side-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(6px, -42px); }
+}
+.hf-sp-front-left-bell { animation: hf-sp-front-left-bell var(--rep-dur, 4s) ease-in-out infinite; }
+.hf-sp-front-right-bell { animation: hf-sp-front-right-bell var(--rep-dur, 4s) ease-in-out infinite; }
+.hf-sp-side-bell { animation: hf-sp-side-bell var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-row { animation: hf-row var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-raise-l { animation: hf-raise var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-raise-r { animation: hf-raise-r var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
@@ -220,6 +237,9 @@ body {
   .hf-bench-side-bell,
   .hf-bench-front-left-bell,
   .hf-bench-front-right-bell,
+  .hf-sp-front-left-bell,
+  .hf-sp-front-right-bell,
+  .hf-sp-side-bell,
   .hf-anim-press,
   .hf-anim-row,
   .hf-anim-raise-l,
