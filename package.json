@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx lib/__tests__/smoke.ts"
   },
   "dependencies": {
     "next": "^16.3.4",
@@ -22,6 +23,7 @@
     "eslint-config-next": "^16.3.4",
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.23.13",
     "typescript": "^6.0.3"
   }
 }

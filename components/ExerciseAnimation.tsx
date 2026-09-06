@@ -214,19 +214,23 @@ function ShoulderPressAnim() {
   return <Views aLabel="Front" bLabel="Side" a={front} b={side} />;
 }
 
-/* ---------------- Lateral raise: FRONT (plates) + TOP (bars) ---------------- */
+/* ---------------- Lateral raise: FRONT (plates) + TOP (bars) ----------------
+ * Full ROM: rest hangs at the sides, top ≈ 100° abduction (measured).
+ * The old figure hovered half-raised forever — it never came down. */
 function LateralRaiseAnim() {
   const pivot: CSSProperties = { transformBox: "view-box", transformOrigin: "100px 62px" };
   const front = (
     <>
       <StandingFigure />
-      <g className="hf-anim-raise-l" style={pivot}>
-        <line x1={100} y1={62} x2={54} y2={72} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Plate x={48} y={74} />
+      <path className="hf-traj" d="M84 106 Q60 80 53 55" />
+      <path className="hf-traj" d="M116 106 Q140 80 147 55" />
+      <g className="hf-anim-raiseFL" style={pivot}>
+        <line x1={100} y1={62} x2={88} y2={108} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Plate x={87} y={113} />
       </g>
-      <g className="hf-anim-raise-r" style={pivot}>
-        <line x1={100} y1={62} x2={146} y2={72} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Plate x={152} y={74} />
+      <g className="hf-anim-raiseFR" style={pivot}>
+        <line x1={100} y1={62} x2={112} y2={108} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Plate x={113} y={113} />
       </g>
     </>
   );
@@ -235,15 +239,15 @@ function LateralRaiseAnim() {
     <>
       <circle cx={100} cy={32} r={10} fill="none" stroke={INK} strokeWidth={4} />
       <line x1={100} y1={44} x2={100} y2={112} stroke={INK} strokeWidth={5} strokeLinecap="round" />
-      <path className="hf-traj" d="M78 94 Q60 80 54 68" />
-      <path className="hf-traj" d="M122 94 Q140 80 146 68" />
-      <g className="hf-anim-raise-l" style={topPivot}>
-        <line x1={100} y1={62} x2={56} y2={66} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={50} y={68} />
+      <path className="hf-traj" d="M86 100 Q62 80 54 66" />
+      <path className="hf-traj" d="M114 100 Q138 80 146 66" />
+      <g className="hf-anim-raiseFL" style={topPivot}>
+        <line x1={100} y1={62} x2={88} y2={104} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={86} y={108} />
       </g>
-      <g className="hf-anim-raise-r" style={topPivot}>
-        <line x1={100} y1={62} x2={144} y2={66} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={150} y={68} />
+      <g className="hf-anim-raiseFR" style={topPivot}>
+        <line x1={100} y1={62} x2={112} y2={104} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={114} y={108} />
       </g>
     </>
   );

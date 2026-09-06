@@ -67,6 +67,17 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
     setShowForm(true);
   };
 
+  // Estimated rep progress during work sets (pacing guidance, not a rep counter).
+  const workRep =
+    phase === "working"
+      ? (() => {
+          const repSecs = ctl.effSecs(exercise).work / exercise.targetReps;
+          const elapsed = ctl.totalDuration - secondsRemaining;
+          const done = Math.min(exercise.targetReps, Math.floor(elapsed / repSecs));
+          return { done, est: Math.min(exercise.targetReps, done + 1) };
+        })()
+      : null;
+
   if (phase === "complete") {
     const totalMs = workoutStart ? (workoutEnd ?? Date.now()) - workoutStart : 0;
     return (
@@ -248,22 +259,27 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
             <div className="mx-auto mt-2 h-4 max-w-xl overflow-hidden rounded-full bg-slate-700">
               <div className="h-full rounded-full bg-green-400 transition-all" style={{ width: `${progress * 100}%` }} />
             </div>
+            {workRep && (
+              <div className="mt-2 flex items-center justify-center gap-1.5" aria-hidden="true">
+                {Array.from({ length: exercise.targetReps }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`h-3 w-3 rounded-full ${i < workRep.done ? "bg-green-400" : "bg-slate-700"}`}
+                  />
+                ))}
+              </div>
+            )}
             <div className="mt-4 flex items-center justify-center gap-6">
               <div className="text-left">
                 <div className="text-base uppercase tracking-wider text-slate-400">Target reps</div>
                 <div className="text-6xl font-extrabold">{centerExercise.targetReps}</div>
               </div>
-              {phase === "working" && (() => {
-                const repSecs = ctl.effSecs(exercise).work / exercise.targetReps;
-                const elapsed = ctl.totalDuration - secondsRemaining;
-                const est = Math.min(exercise.targetReps, Math.floor(elapsed / repSecs) + 1);
-                return (
-                  <div className="text-left">
-                    <div className="text-base uppercase tracking-wider text-slate-400">Pace — rep</div>
-                    <div className="text-6xl font-extrabold tabular-nums text-sky-300">~{est}</div>
-                  </div>
-                );
-              })()}
+              {phase === "working" && workRep && (
+                <div className="text-left">
+                  <div className="text-base uppercase tracking-wider text-slate-400">Pace — rep</div>
+                  <div className="text-6xl font-extrabold tabular-nums text-sky-300">~{workRep.est}</div>
+                </div>
+              )}
               {paused
                 ? <div className="rounded-xl bg-amber-400/15 px-4 py-2 text-2xl font-bold text-amber-300">Paused — tap to resume</div>
                 : <div className="rounded-xl bg-slate-700/60 px-4 py-2 text-xl font-bold text-slate-300">Tap timer to pause</div>}
