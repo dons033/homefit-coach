@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { ExerciseAnimation } from "./ExerciseAnimation";
+import { FormModal } from "./FormModal";
 import type { WorkoutController } from "@/hooks/useWorkoutController";
 import { setLabel, type Workout } from "@/lib/workout";
 
@@ -58,6 +60,12 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
 
   const side = setLabel(exercise, setNumber);
   const totalExercises = workout.exercises.length;
+  const [showForm, setShowForm] = useState(false);
+
+  const openForm = () => {
+    if (!paused) ctl.pause();
+    setShowForm(true);
+  };
 
   if (phase === "complete") {
     const totalMs = workoutStart ? (workoutEnd ?? Date.now()) - workoutStart : 0;
@@ -204,7 +212,16 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
               repSeconds={ctl.effSecs(centerExercise).work / centerExercise.targetReps}
               paused={paused}
             />
+            <div className="mt-1 flex justify-center">
+              <button
+                onClick={openForm}
+                className="min-h-[56px] rounded-xl px-6 text-xl font-bold text-sky-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
+              >
+                📷 Form guide
+              </button>
+            </div>
           </div>
+          {showForm && <FormModal exercise={centerExercise} onClose={() => setShowForm(false)} />}
 
           {/* cues */}
           <ol className="mt-2 w-full max-w-3xl space-y-1 text-left">

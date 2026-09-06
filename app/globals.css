@@ -45,23 +45,23 @@ body {
   100% { transform: translateY(-14px); }
 }
 @keyframes hf-raise {
-  0% { transform: rotate(-28deg); }
-  38% { transform: rotate(28deg); }
-  52% { transform: rotate(28deg); }
-  88% { transform: rotate(-28deg); }
-  100% { transform: rotate(-28deg); }
+  0% { transform: rotate(-30deg); }
+  38% { transform: rotate(30deg); }
+  52% { transform: rotate(30deg); }
+  88% { transform: rotate(-30deg); }
+  100% { transform: rotate(-30deg); }
 }
 @keyframes hf-curl {
   0% { transform: rotate(0deg); }
-  38% { transform: rotate(-68deg); }
-  52% { transform: rotate(-68deg); }
+  38% { transform: rotate(-135deg); }
+  52% { transform: rotate(-135deg); }
   88% { transform: rotate(0deg); }
   100% { transform: rotate(0deg); }
 }
 @keyframes hf-tri {
   0% { transform: rotate(0deg); }
-  38% { transform: rotate(55deg); }
-  52% { transform: rotate(55deg); }
+  38% { transform: rotate(-100deg); }
+  52% { transform: rotate(-100deg); }
   88% { transform: rotate(0deg); }
   100% { transform: rotate(0deg); }
 }
@@ -88,6 +88,26 @@ body {
 /* Workout paused: freeze every figure mid-pose. */
 .hf-paused, .hf-paused * { animation-play-state: paused !important; }
 
+/* Rep-phase captions: LIFT → HOLD → LOWER → BOTTOM, on the same tempo. */
+@keyframes hf-cap-lift { 0%, 36% { opacity: 1; } 42%, 94% { opacity: 0.12; } 100% { opacity: 1; } }
+@keyframes hf-cap-hold { 0%, 36% { opacity: 0.12; } 40%, 50% { opacity: 1; } 56%, 100% { opacity: 0.12; } }
+@keyframes hf-cap-lower { 0%, 50% { opacity: 0.12; } 56%, 86% { opacity: 1; } 92%, 100% { opacity: 0.12; } }
+@keyframes hf-cap-bottom { 0%, 86% { opacity: 0.12; } 90%, 97% { opacity: 1; } 100% { opacity: 0.12; } }
+.hf-cap-lift, .hf-cap-hold, .hf-cap-lower, .hf-cap-bottom { opacity: 0.12; }
+.hf-cap-lift { animation: hf-cap-lift var(--rep-dur, 4s) linear infinite; }
+.hf-cap-hold { animation: hf-cap-hold var(--rep-dur, 4s) linear infinite; }
+.hf-cap-lower { animation: hf-cap-lower var(--rep-dur, 4s) linear infinite; }
+.hf-cap-bottom { animation: hf-cap-bottom var(--rep-dur, 4s) linear infinite; }
+
+/* Dotted bell-path guides (static, calm). */
+.hf-traj {
+  fill: none;
+  stroke: #475569;
+  stroke-width: 2;
+  stroke-dasharray: 2 7;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
 /* Krita sprite strips (see ExerciseAnimation.tsx for export spec). */
 .hf-sprite {
   background-repeat: no-repeat;
@@ -105,7 +125,11 @@ body {
   .hf-anim-curl,
   .hf-anim-tri,
   .hf-anim-soft,
-  .hf-sprite {
+  .hf-sprite,
+  .hf-cap-lift,
+  .hf-cap-hold,
+  .hf-cap-lower,
+  .hf-cap-bottom {
     animation: none !important;
   }
 }

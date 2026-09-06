@@ -78,8 +78,10 @@ function BenchPressAnim() {
       <rect x={122} y={120} width={8} height={35} fill={DIM} />
       <ellipse cx={85} cy={100} rx={38} ry={12} fill="none" stroke={INK} strokeWidth={3.5} />
       <circle cx={45} cy={88} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
+      <line x1={37} y1={86} x2={31} y2={84} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
       <line x1={120} y1={100} x2={140} y2={125} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
       <line x1={140} y1={125} x2={140} y2={155} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
+      <path className="hf-traj" d="M94 40 V74" />
       <g className={cls}>
         <line x1={84} y1={98} x2={74} y2={78} stroke={INK} strokeWidth={4} strokeLinecap="round" />
         <line x1={74} y1={78} x2={80} y2={58} stroke={INK} strokeWidth={4} strokeLinecap="round" />
@@ -102,8 +104,10 @@ function RowAnim() {
       <rect x={122} y={128} width={8} height={28} fill={DIM} />
       <line x1={55} y1={80} x2={115} y2={80} stroke={INK} strokeWidth={5.5} strokeLinecap="round" />
       <circle cx={126} cy={68} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
+      <line x1={118} y1={66} x2={112} y2={64} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
       <line x1={60} y1={80} x2={60} y2={118} stroke={INK} strokeWidth={4} strokeLinecap="round" />
       <line x1={115} y1={80} x2={110} y2={118} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <path className="hf-traj" d="M95 88 V110" />
       <g className={cls}>
         <line x1={95} y1={82} x2={95} y2={108} stroke={INK} strokeWidth={4} strokeLinecap="round" />
         <Dumbbell x={95} y={114} />
@@ -134,6 +138,8 @@ function ShoulderPressAnim() {
       {/* upper arms held horizontal — the press moves forearms + bells */}
       <line x1={100} y1={62} x2={76} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
       <line x1={100} y1={62} x2={124} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <path className="hf-traj" d="M76 28 V58" />
+      <path className="hf-traj" d="M124 28 V58" />
       <g className={cls}>
         <line x1={76} y1={62} x2={76} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
         <line x1={124} y1={62} x2={124} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
@@ -152,6 +158,8 @@ function LateralRaiseAnim() {
     <div className="flex items-center justify-center">
       <Frame label="Raise to shoulder height">
         <StandingFigure />
+        <path className="hf-traj" d="M72 102 Q50 88 48 74" />
+        <path className="hf-traj" d="M128 102 Q150 88 152 74" />
         <g className="hf-anim-raise-l" style={pivot}>
           <line x1={100} y1={62} x2={54} y2={72} stroke={INK} strokeWidth={4} strokeLinecap="round" />
           <Dumbbell x={48} y={74} />
@@ -172,6 +180,8 @@ function CurlAnim() {
       <StandingFigure />
       <line x1={100} y1={62} x2={86} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
       <line x1={100} y1={62} x2={114} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <path className="hf-traj" d="M86 120 A36 36 0 0 1 70 64" />
+      <path className="hf-traj" d="M114 120 A36 36 0 0 0 130 64" />
       <g
         className={cls}
         style={{ transformBox: "view-box", transformOrigin: "86px 86px" }}
@@ -196,8 +206,9 @@ function TricepsAnim() {
   const pose = (cls: string) => (
     <>
       <StandingFigure />
-      <line x1={100} y1={62} x2={94} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={62} x2={106} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      {/* upper arms pinned vertical, close to the head (see reference photo) */}
+      <line x1={100} y1={62} x2={100} y2={40} stroke={INK} strokeWidth={5} strokeLinecap="round" />
+      <path className="hf-traj" d="M100 10 A32 32 0 0 0 70 50" />
       <g
         className={cls}
         style={{ transformBox: "view-box", transformOrigin: "100px 40px" }}
@@ -316,6 +327,19 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
   );
 }
 
+/** Rep-phase caption: LIFT → HOLD → LOWER → BOTTOM, on the same tempo.
+ *  Lives inside the --rep-dur wrapper so it stays in sync with the figure. */
+function PhaseCaption() {
+  return (
+    <div className="relative mx-auto mt-1 h-7 w-full max-w-3xl text-center text-lg font-bold uppercase tracking-[0.2em]" aria-hidden="true">
+      <span className="hf-cap-lift absolute inset-0 text-green-300">Lift ↑</span>
+      <span className="hf-cap-hold absolute inset-0 text-sky-300">Hold</span>
+      <span className="hf-cap-lower absolute inset-0 text-amber-300">Lower ↓</span>
+      <span className="hf-cap-bottom absolute inset-0 text-slate-400">Bottom</span>
+    </div>
+  );
+}
+
 const KNOWN_IDS = new Set([
   "bench-press",
   "one-arm-row",
@@ -387,7 +411,7 @@ export function ExerciseAnimation({
   return (
     <div
       className={`${paused ? "hf-paused" : ""} ${className}`}
-      style={{ "--rep-dur": `${Math.min(8, Math.max(1.2, repSeconds))}s` } as CSSProperties}
+      style={{ "--rep-dur": `${Math.min(5, Math.max(2.5, repSeconds))}s` } as CSSProperties}
       aria-hidden="false"
     >
       {exerciseId === "bench-press" && <BenchPressAnim />}
@@ -397,6 +421,7 @@ export function ExerciseAnimation({
       {exerciseId === "biceps-curl" && <CurlAnim />}
       {exerciseId === "triceps-extension" && <TricepsAnim />}
       {!KNOWN_IDS.has(exerciseId) && <GenericAnim />}
+      <PhaseCaption />
     </div>
   );
 }

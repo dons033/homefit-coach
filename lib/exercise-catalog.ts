@@ -35,6 +35,10 @@ export type Variant = {
   equipment?: string[];
   /** Why/when to choose it. Shown in the variant picker. */
   notes?: string;
+  /** Vendored public-domain reference photos (free-exercise-db). */
+  formImages?: { start: string; end: string };
+  /** Condensed reference steps for the Form modal. */
+  dbSteps?: string[];
 };
 
 export type ExerciseInfo = {
@@ -51,7 +55,7 @@ export type ExerciseInfo = {
 const standard = (
   cues: string[],
   animationId: string,
-  extra?: Partial<Variant>
+  extra: Partial<Variant> & { formImages: { start: string; end: string }; dbSteps: string[] }
 ): Record<string, Variant> => ({
   standard: { id: "standard", label: "Standard", cues, animationId, ...extra },
 });
@@ -69,6 +73,12 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         id: "bench",
         label: "Bench",
         animationId: "bench-press",
+        formImages: { start: "/form/bench-press/0.jpg", end: "/form/bench-press/1.jpg" },
+        dbSteps: [
+          "Dumbbells just outside the chest, forearms vertical, elbow angle ≈ 90°.",
+          "Press up in a slight inward arc, squeeze 1s at the top.",
+          "Lower in about twice the press time. No bouncing.",
+        ],
         cues: [
           "Lie on a bench with a dumbbell in each hand.",
           "Start with dumbbells at chest level, palms forward.",
@@ -82,6 +92,12 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         animationId: "bench-press",
         equipment: ["dumbbells"],
         notes: "No bench needed. The floor stops your range at torso level.",
+        formImages: { start: "/form/bench-press-floor/0.jpg", end: "/form/bench-press-floor/1.jpg" },
+        dbSteps: [
+          "Knees bent, bells start extended overhead.",
+          "Lower until upper arms touch the floor. Tuck elbows for triceps, flare slightly for chest.",
+          "Pause, then press to full extension.",
+        ],
         cues: [
           "Lie on the floor, knees bent, feet flat.",
           "Start with dumbbells at chest level, upper arms resting on the floor.",
@@ -105,7 +121,15 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         "Keep elbow close to your body, squeeze at the top.",
         "Lower slowly. No twisting or jerking.",
       ],
-      "one-arm-row"
+      "one-arm-row",
+      {
+        formImages: { start: "/form/one-arm-row/0.jpg", end: "/form/one-arm-row/1.jpg" },
+        dbSteps: [
+          "Torso parallel to the floor, back flat, working arm hangs straight.",
+          "Pull to the side of the chest, elbow past the ribs, squeeze.",
+          "Lower straight down. Torso stays still.",
+        ],
+      }
     ),
   },
   "shoulder-press": {
@@ -122,7 +146,15 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         "Press overhead until arms are nearly straight.",
         "Lower to shoulders with control.",
       ],
-      "shoulder-press"
+      "shoulder-press",
+      {
+        formImages: { start: "/form/shoulder-press/0.jpg", end: "/form/shoulder-press/1.jpg" },
+        dbSteps: [
+          "Bells at shoulder height outside the shoulders, palms forward.",
+          "Press until the bells nearly touch overhead.",
+          "Pause briefly, lower with control.",
+        ],
+      }
     ),
   },
   "lateral-raise": {
@@ -139,7 +171,15 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         "Lead with elbows, don't shrug your shoulders.",
         "Lower slowly. No swinging.",
       ],
-      "lateral-raise"
+      "lateral-raise",
+      {
+        formImages: { start: "/form/lateral-raise/0.jpg", end: "/form/lateral-raise/1.jpg" },
+        dbSteps: [
+          "Bells at your sides, slight fixed elbow bend.",
+          "Raise in a wide arc to just above parallel, hands tilted like pouring water.",
+          "Pause 1s, lower slowly. No shrug, no swing.",
+        ],
+      }
     ),
   },
   "biceps-curl": {
@@ -156,7 +196,15 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         "Keep wrists straight, don't swing your back.",
         "Lower all the way down with control.",
       ],
-      "biceps-curl"
+      "biceps-curl",
+      {
+        formImages: { start: "/form/biceps-curl/0.jpg", end: "/form/biceps-curl/1.jpg" },
+        dbSteps: [
+          "Arms hang, palms forward, elbows pinned at your sides.",
+          "Curl to shoulder level, squeeze briefly at the top.",
+          "Lower slowly to full extension.",
+        ],
+      }
     ),
   },
   "triceps-extension": {
@@ -173,7 +221,15 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         "Lower behind your head, then press straight up.",
         "Don't let elbows flare wide.",
       ],
-      "triceps-extension"
+      "triceps-extension",
+      {
+        formImages: { start: "/form/triceps-extension/0.jpg", end: "/form/triceps-extension/1.jpg" },
+        dbSteps: [
+          "Bell overhead, both hands, arms fully extended.",
+          "Lower behind the head until forearms near the biceps. Upper arms still.",
+          "Press back overhead. No elbow flare.",
+        ],
+      }
     ),
   },
 };
