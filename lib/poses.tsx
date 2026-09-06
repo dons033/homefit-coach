@@ -14,15 +14,12 @@ import {
   Limb,
   Dot,
   Mitt,
-  HeadFront,
   HeadProfile,
-  TorsoFront,
-  Shorts,
   Shoe,
   Traj,
   type RigJoint,
 } from "@/components/RigFigure";
-import { Dumbbell, Plate } from "@/components/bells";
+import { Plate } from "@/components/bells";
 
 export type RigDef = {
   id: string;
@@ -33,17 +30,6 @@ export type RigDef = {
   /** Critique checklist for /lab and future reviewers. */
   notes: string[];
 };
-
-function standingLegs(spread = 10, hipY = 102, footY = 148) {
-  return (
-    <>
-      <Limb x1={100} y1={hipY} x2={100 - spread} y2={footY} />
-      <Limb x1={100} y1={hipY} x2={100 + spread} y2={footY} />
-      <Shoe x={100 - spread} y={footY} dir={-1} />
-      <Shoe x={100 + spread} y={footY} dir={1} />
-    </>
-  );
-}
 
 function profileLegs(hipX = 72, hipY = 106, footY = 150) {
   return (
@@ -56,141 +42,18 @@ function profileLegs(hipX = 72, hipY = 106, footY = 150) {
   );
 }
 
-const curlFrontBody = (
-  <>
-    <HeadFront x={100} y={28} />
-    <TorsoFront x={100} top={40} bottom={102} />
-    <Dot x={80} y={62} />
-    <Dot x={120} y={62} />
-    <Limb x1={100} y1={62} x2={80} y2={86} />
-    <Limb x1={100} y1={62} x2={120} y2={86} />
-    <Dot x={80} y={86} />
-    <Dot x={120} y={86} />
-    {standingLegs(8)}
-    <Shorts x={100} y={94} />
-  </>
-);
-
-const hammerFrontBody = (
-  <>
-    <HeadFront x={100} y={28} />
-    <TorsoFront x={100} top={40} bottom={102} />
-    <Dot x={84} y={62} />
-    <Dot x={116} y={62} />
-    <Limb x1={100} y1={62} x2={84} y2={86} />
-    <Limb x1={100} y1={62} x2={116} y2={86} />
-    <Dot x={84} y={86} />
-    <Dot x={116} y={86} />
-    {standingLegs(8)}
-    <Shorts x={100} y={94} />
-  </>
-);
-
 const curlSideBody = (
   <>
-    <HeadProfile x={62} y={32} />
-    <Limb x1={72} y1={44} x2={72} y2={106} w={10} />
-    <Dot x={72} y={58} />
-    <Limb x1={72} y1={58} x2={72} y2={84} />
-    <Dot x={72} y={84} />
-    {profileLegs()}
-    <rect x={61} y={96} width={22} height={14} rx={6} fill={INK} opacity={0.9} />
+    {/* Head continues the spine line — level nose, no droop. */}
+    <HeadProfile x={58} y={26} />
+    <rect x={66} y={40} width={17} height={56} rx={8.5} fill={INK} />
+    <Dot x={74} y={52} />
+    <Limb x1={74} y1={52} x2={74} y2={84} w={7} />
+    {profileLegs(74, 94, 150)}
   </>
 );
 
 export const RIG_DEFS: Record<string, RigDef> = {
-  "curl-front-regular": {
-    id: "curl-front-regular",
-    label: "Curl — front",
-    view: "front",
-    body: (
-      <>
-        {curlFrontBody}
-        <Traj d="M80 120 A38 38 0 0 1 64 60" />
-        <Traj d="M120 120 A38 38 0 0 0 136 60" />
-      </>
-    ),
-    joints: [
-      {
-        id: "elbowL",
-        pivot: [80, 86],
-        from: 0,
-        to: -135,
-        draw: (
-          <>
-            <Limb x1={80} y1={86} x2={80} y2={114} c={ACTIVE} w={10} />
-            <Mitt x={80} y={115} c={ACTIVE} />
-            <Dumbbell x={80} y={122} s={0.85} />
-          </>
-        ),
-      },
-      {
-        id: "elbowR",
-        pivot: [120, 86],
-        from: 0,
-        to: -135,
-        draw: (
-          <>
-            <Limb x1={120} y1={86} x2={120} y2={114} c={ACTIVE} w={10} />
-            <Mitt x={120} y={115} c={ACTIVE} />
-            <Dumbbell x={120} y={122} s={0.85} />
-          </>
-        ),
-      },
-    ],
-    notes: [
-      "Blue forearms are the ONLY movers — elbows pinned at sides, no forward drift.",
-      "Bells finish at shoulder height, slightly outside the shoulders.",
-      "Palms face forward the whole way; wrists straight.",
-      "Full extension at the bottom — no half-reps.",
-    ],
-  },
-  "curl-front-hammer": {
-    id: "curl-front-hammer",
-    label: "Hammer curl — front",
-    view: "front",
-    body: (
-      <>
-        {hammerFrontBody}
-        <Traj d="M82 122 A34 34 0 0 1 72 66" />
-        <Traj d="M118 122 A34 34 0 0 0 128 66" />
-      </>
-    ),
-    joints: [
-      {
-        id: "elbowL",
-        pivot: [84, 86],
-        from: 0,
-        to: -120,
-        draw: (
-          <>
-            <Limb x1={84} y1={86} x2={82} y2={114} c={ACTIVE} w={10} />
-            <Mitt x={82} y={115} c={ACTIVE} />
-            <Plate x={82} y={122} s={0.85} />
-          </>
-        ),
-      },
-      {
-        id: "elbowR",
-        pivot: [116, 86],
-        from: 0,
-        to: -120,
-        draw: (
-          <>
-            <Limb x1={116} y1={86} x2={118} y2={114} c={ACTIVE} w={10} />
-            <Mitt x={118} y={115} c={ACTIVE} />
-            <Plate x={118} y={122} s={0.85} />
-          </>
-        ),
-      },
-    ],
-    notes: [
-      "Neutral grip — palms face the thighs, plates face the camera.",
-      "Path stays tight to the body; finish at chest height, not shoulders.",
-      "Elbows stay back — no shoulder involvement.",
-      "Same hinge as regular curl; only the handle turned.",
-    ],
-  },
   "curl-side": {
     id: "curl-side",
     label: "Curl — side",
@@ -198,28 +61,28 @@ export const RIG_DEFS: Record<string, RigDef> = {
     body: (
       <>
         {curlSideBody}
-        <Traj d="M72 118 A36 36 0 0 1 40 82" />
+        <Traj d="M74 119 A35 35 0 0 1 49 59" />
       </>
     ),
     joints: [
       {
         id: "elbow",
-        pivot: [72, 84],
+        pivot: [74, 84],
         from: 0,
         to: 135,
         draw: (
           <>
-            <Limb x1={72} y1={84} x2={72} y2={112} c={ACTIVE} w={10} />
-            <Mitt x={72} y={113} c={ACTIVE} />
-            <Plate x={72} y={120} />
+            <Limb x1={74} y1={84} x2={74} y2={112} c={ACTIVE} w={7} />
+            <Mitt x={74} y={113} c={ACTIVE} />
+            <Plate x={74} y={119} s={0.85} />
           </>
         ),
       },
     ],
     notes: [
-      "Blue forearm is the ONLY mover — upper arm stays vertical.",
-      "Forearm sweeps forward-up about 135°.",
-      "No torso swing; hips stay over the feet.",
+      "Blue forearm is the ONLY mover — upper arm stays vertical, pinned at the side.",
+      "Forearm sweeps forward-up about 135°; plate finishes below head height, clear of the face.",
+      "No torso swing; hips stay over the feet; head level with the spine.",
     ],
   },
 };

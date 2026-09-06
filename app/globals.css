@@ -153,6 +153,39 @@ body {
 .hf-sp-front-left-bell { animation: hf-sp-front-left-bell var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-sp-front-right-bell { animation: hf-sp-front-right-bell var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-sp-side-bell { animation: hf-sp-side-bell var(--rep-dur, 4s) ease-in-out infinite; }
+/* Biceps curls: front forearms rise straight (SMIL morph in TSX); bells
+ * track the hand linearly. Hammer tops at chest height. */
+@keyframes hf-curl-front-left-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(-3px, -54px); }
+}
+@keyframes hf-curl-front-right-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(3px, -54px); }
+}
+@keyframes hf-curl-hammer-left-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(-3px, -49px); }
+}
+@keyframes hf-curl-hammer-right-bell {
+  0%, 88%, 100% { transform: translate(0, 0); }
+  38%, 52% { transform: translate(3px, -49px); }
+}
+.hf-curl-front-left-bell { animation: hf-curl-front-left-bell var(--rep-dur, 4s) ease-in-out infinite; }
+.hf-curl-front-right-bell { animation: hf-curl-front-right-bell var(--rep-dur, 4s) ease-in-out infinite; }
+.hf-curl-hammer-left-bell { animation: hf-curl-hammer-left-bell var(--rep-dur, 4s) ease-in-out infinite; }
+.hf-curl-hammer-right-bell { animation: hf-curl-hammer-right-bell var(--rep-dur, 4s) ease-in-out infinite; }
+/* Lateral raise side: rigid rotation about the shoulder; the bell rides
+ * inside the rotating group so it tracks at every phase. */
+@keyframes hf-raise-side {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  38%, 52% { transform: rotate(95deg); }
+}
+.hf-raise-side {
+  animation: hf-raise-side var(--rep-dur, 4s) ease-in-out infinite;
+  transform-box: view-box;
+  transform-origin: 76px 56px;
+}
 .hf-anim-row { animation: hf-row var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-raise-l { animation: hf-raise var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-raise-r { animation: hf-raise-r var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
@@ -240,6 +273,11 @@ body {
   .hf-sp-front-left-bell,
   .hf-sp-front-right-bell,
   .hf-sp-side-bell,
+  .hf-curl-front-left-bell,
+  .hf-curl-front-right-bell,
+  .hf-curl-hammer-left-bell,
+  .hf-curl-hammer-right-bell,
+  .hf-raise-side,
   .hf-anim-press,
   .hf-anim-row,
   .hf-anim-raise-l,

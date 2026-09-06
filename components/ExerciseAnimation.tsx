@@ -243,8 +243,10 @@ function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paus
       <rect x={44} y={107} width={18} height={5} rx={2.5} fill={INK} />
       <rect x={60} y={65} width={72} height={18} rx={9} fill={INK} />
       <path d="M52 68 L65 73 M126 81 L145 123 L162 157 L149 157" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={43} cy={67} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
-      <path d="M34 70 L30 75 L36 76" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
+      {/* Head continues the spine line — neck level, eyes forward, no droop. */}
+      <path d="M51 60 L60 66" stroke={INK} strokeWidth={6} strokeLinecap="round" />
+      <circle cx={44} cy={54} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <path d="M35 52 L29 54 L35 57" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
       <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
         <path d={sideTop} />
         <rect x={93} y={87} width={26} height={14} rx={3} />
@@ -285,6 +287,35 @@ function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paus
   return <div ref={boxRef}><Views aLabel="Side" bLabel="Back" a={side} b={back} /></div>;
 }
 
+/** Shared standing front body: floor, head, torso capsule, legs, feet. */
+function StandingFront() {
+  return (
+    <>
+      <path d="M30 157 H170" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
+      <circle cx={100} cy={35} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} />
+      <path d="M93 95 L89 150 M107 95 L111 150" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <ellipse cx={85} cy={151} rx={9} ry={4.5} fill={INK} />
+      <ellipse cx={115} cy={151} rx={9} ry={4.5} fill={INK} />
+    </>
+  );
+}
+
+/** Shared standing profile body (facing left): floor, head, torso, legs. */
+function StandingSide() {
+  return (
+    <>
+      <path d="M30 157 H170" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
+      <circle cx={62} cy={32} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <path d="M53 31 L48 33 L54 35" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
+      <rect x={68} y={44} width={17} height={51} rx={8.5} fill={INK} />
+      <path d="M75 93 L64 150 M75 93 L87 150" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <ellipse cx={58} cy={151} rx={9} ry={4.5} fill={INK} />
+      <ellipse cx={81} cy={151} rx={9} ry={4.5} fill={INK} />
+    </>
+  );
+}
+
 /* ---------------- Shoulder press: FRONT (bars) + SIDE profile (plates) ----------------
  * Rack: bells at shoulder height just outside the shoulders, forearms
  * vertical, elbows out-front. Lockout: arms straight, bells nearly touching
@@ -304,12 +335,7 @@ function ShoulderPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: nu
   useSmilClock(boxRef, "[data-sp-bell]", paused, motion, dur);
   const front = (
     <>
-      <path d="M30 157 H170" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
-      <circle cx={100} cy={35} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
-      <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} />
-      <path d="M93 95 L89 150 M107 95 L111 150" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
-      <ellipse cx={85} cy={151} rx={9} ry={4.5} fill={INK} />
-      <ellipse cx={115} cy={151} rx={9} ry={4.5} fill={INK} />
+      <StandingFront />
       <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
         <path d={SP_FRONT_TOP_L} />
         <path d={SP_FRONT_TOP_R} />
@@ -334,13 +360,7 @@ function ShoulderPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: nu
   );
   const side = (
     <>
-      <path d="M30 157 H170" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
-      <circle cx={62} cy={32} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
-      <path d="M53 35 L49 40 L55 41" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
-      <rect x={68} y={44} width={17} height={51} rx={8.5} fill={INK} />
-      <path d="M75 93 L64 150 M75 93 L87 150" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
-      <ellipse cx={58} cy={151} rx={9} ry={4.5} fill={INK} />
-      <ellipse cx={81} cy={151} rx={9} ry={4.5} fill={INK} />
+      <StandingSide />
       <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
         <path d={SP_SIDE_TOP} />
         <circle cx={72} cy={10} r={10} />
@@ -362,9 +382,12 @@ function ShoulderPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: nu
   );
 }
 
-/* ---------------- Lateral raise: FRONT (plates) + TOP (bars) ----------------
+/* ---------------- Lateral raise: FRONT (plates) + SIDE profile (plate end-on) ----------------
  * Full ROM: rest hangs at the sides, top ≈ 100° abduction (measured).
- * The old figure hovered half-raised forever — it never came down. */
+ * The old figure hovered half-raised forever — it never came down.
+ * The old second view (top-down) read as a broken front view, so the pair
+ * is front + side now: the side arm is a rigid rotation about the shoulder
+ * (CSS rotate, bell inside the group so it tracks), 0 → 95°. */
 function LateralRaiseAnim() {
   const pivot: CSSProperties = { transformBox: "view-box", transformOrigin: "100px 62px" };
   const front = (
@@ -382,51 +405,97 @@ function LateralRaiseAnim() {
       </g>
     </>
   );
-  const topPivot: CSSProperties = { transformBox: "view-box", transformOrigin: "100px 62px" };
-  const top = (
+  const side = (
     <>
-      <circle cx={100} cy={32} r={10} fill="none" stroke={INK} strokeWidth={4} />
-      <line x1={100} y1={44} x2={100} y2={112} stroke={INK} strokeWidth={5} strokeLinecap="round" />
-      <path className="hf-traj" d="M86 100 Q62 80 54 66" />
-      <path className="hf-traj" d="M114 100 Q138 80 146 66" />
-      <g className="hf-anim-raiseFL" style={topPivot}>
-        <line x1={100} y1={62} x2={88} y2={104} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={86} y={108} />
+      <StandingSide />
+      {/* Ghost at the raised extreme (95° about the shoulder). */}
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d="M76 56 L51 48 L26 50" />
+        <circle cx={20} cy={49} r={9} />
       </g>
-      <g className="hf-anim-raiseFR" style={topPivot}>
-        <line x1={100} y1={62} x2={112} y2={104} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={114} y={108} />
+      <path className="hf-traj" d="M74 112 A56 56 0 0 1 20 49" />
+      <g className="hf-mover hf-raise-side" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M76 56 L70 82 L74 106" />
+        <g stroke="none"><Plate x={74} y={112} s={0.9} /></g>
       </g>
+      <circle cx={76} cy={56} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
     </>
   );
-  return <Views aLabel="Front" bLabel="Top" a={front} b={top} />;
+  return <Views aLabel="Front" bLabel="Side" a={front} b={side} />;
 }
 
-/* ---------------- Biceps curl: FRONT (bars) + SIDE profile (plates) ---------------- */
-/* ---------------- Rig-driven curls (regular + hammer share the side view) ---------------- */
-function RigViews({
-  frontId,
-  sideId,
-  repSeconds,
-  paused,
-}: {
-  frontId: string;
-  sideId: string;
-  repSeconds: number;
-  paused: boolean;
-}) {
-  const front = RIG_DEFS[frontId];
-  const side = RIG_DEFS[sideId];
-  if (!front || !side) return null;
+/* ---------------- Biceps curls: FRONT (bars/plates) + SIDE rig (plate) ----------------
+ * Front: elbows pinned at the sides (static INK upper arms); the forearm
+ * rises straight up — a front view foreshortens the arc, so the hand tracks
+ * a line and the bell rides a matching CSS translate. Hammer = same hinge,
+ * plate bells, tops at chest height. Side = the rig: profile rotation IS
+ * the hinge plane, and the bell rides inside the rotating group. */
+function CurlViews({ hammer, repSeconds, paused }: { hammer: boolean; repSeconds: number; paused: boolean }) {
+  const dur = Math.min(5, Math.max(2.5, repSeconds));
+  const motion = !usePrefersReducedMotion();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useSmilClock(boxRef, "[data-curl-bell]", paused, motion, dur);
+  const side = RIG_DEFS["curl-side"];
+  const restL = "M85 86 L85 114";
+  const restR = "M115 86 L115 114";
+  const topL = hammer ? "M85 86 L82 66" : "M85 86 L82 60";
+  const topR = hammer ? "M115 86 L118 66" : "M115 86 L118 60";
+  const bellTopY = hammer ? 65 : 60;
+  const front = (
+    <>
+      <StandingFront />
+      {/* Pinned upper arms: static body — the elbow is the only mover. */}
+      <path d="M85 58 L85 86 M115 58 L115 86" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" />
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d={topL} />
+        <path d={topR} />
+        {hammer ? (
+          <>
+            <circle cx={82} cy={bellTopY} r={9} />
+            <circle cx={118} cy={bellTopY} r={9} />
+          </>
+        ) : (
+          <>
+            <rect x={68.5} y={bellTopY - 7.5} width={27} height={15} rx={4} />
+            <rect x={104.5} y={bellTopY - 7.5} width={27} height={15} rx={4} />
+          </>
+        )}
+      </g>
+      <path className="hf-traj" d={`M85 114 L82 ${bellTopY}`} />
+      <path className="hf-traj" d={`M115 114 L118 ${bellTopY}`} />
+      <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d={restL}><ArmMorphD rest={restL} top={topL} dur={dur} on={motion} /></path>
+        <path d={restR}><ArmMorphD rest={restR} top={topR} dur={dur} on={motion} /></path>
+        {hammer ? (
+          <>
+            <g data-curl-bell className="hf-curl-hammer-left-bell" stroke="none"><Plate x={85} y={114} s={0.85} /></g>
+            <g className="hf-curl-hammer-right-bell" stroke="none"><Plate x={115} y={114} s={0.85} /></g>
+          </>
+        ) : (
+          <>
+            <g data-curl-bell className="hf-curl-front-left-bell" stroke="none"><Dumbbell x={85} y={114} s={0.75} /></g>
+            <g className="hf-curl-front-right-bell" stroke="none"><Dumbbell x={115} y={114} s={0.75} /></g>
+          </>
+        )}
+      </g>
+      <circle cx={85} cy={86} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
+      <circle cx={115} cy={86} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
+    </>
+  );
+  if (!side) return null;
   return (
-    <div className="grid w-full max-w-3xl grid-cols-2 items-end gap-6 max-sm:grid-cols-1">
-      <div className="flex min-w-0 flex-col items-center">
-        <RigFigure joints={front.joints} body={front.body} repSeconds={repSeconds} paused={paused} />
-        <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">Front</div>
-      </div>
-      <div className="flex min-w-0 flex-col items-center">
-        <RigFigure joints={side.joints} body={side.body} repSeconds={repSeconds} paused={paused} />
-        <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">Side</div>
+    <div ref={boxRef}>
+      <div className="grid w-full max-w-3xl grid-cols-2 items-end gap-6 max-sm:grid-cols-1">
+        <div className="flex min-w-0 flex-col items-center">
+          <svg viewBox="0 0 200 170" className="h-auto w-full max-w-[360px]" role="img" aria-label="Front">
+            {front}
+          </svg>
+          <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">Front</div>
+        </div>
+        <div className="flex min-w-0 flex-col items-center">
+          <RigFigure joints={side.joints} body={side.body} repSeconds={repSeconds} paused={paused} />
+          <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">Side</div>
+        </div>
       </div>
     </div>
   );
@@ -556,30 +625,31 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
         </g>
       )}
       {exerciseId === "biceps-curl" && (
-        <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
-          <circle cx={40} cy={12} r={5} />
-          <line x1={40} y1={18} x2={40} y2={48} strokeWidth={3} />
-          <line x1={40} y1={48} x2={33} y2={64} />
-          <line x1={40} y1={48} x2={47} y2={64} />
-          <g className="hf-anim-curl">
-            <line x1={40} y1={28} x2={32} y2={44} />
-            <circle cx={32} cy={48} r={4} fill={BLUE} stroke="none" />
-            <line x1={40} y1={28} x2={48} y2={44} />
-            <circle cx={48} cy={48} r={4} fill={BLUE} stroke="none" />
+        <g transform="scale(0.4)" stroke={INK} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M30 157 H170" stroke={DIM} strokeWidth={5} />
+          <circle cx={100} cy={35} r={10} strokeWidth={4} />
+          <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} stroke="none" />
+          <path d="M93 95 L89 150 M107 95 L111 150" />
+          <path d="M85 58 L85 86 M115 58 L115 86" />
+          {/* Static hang identifies the move; the full figure teaches it. */}
+          <g stroke={BLUE}>
+            <path d="M85 86 L85 114" />
+            <path d="M115 86 L115 114" />
+            <g stroke="none"><Dumbbell x={85} y={114} s={0.75} /><Dumbbell x={115} y={114} s={0.75} /></g>
           </g>
         </g>
       )}
       {exerciseId === "biceps-curl-hammer" && (
-        <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
-          <circle cx={40} cy={12} r={5} />
-          <line x1={40} y1={18} x2={40} y2={48} strokeWidth={3} />
-          <line x1={40} y1={48} x2={33} y2={64} />
-          <line x1={40} y1={48} x2={47} y2={64} />
-          <g className="hf-anim-curl">
-            <line x1={40} y1={28} x2={34} y2={44} />
-            <circle cx={34} cy={48} r={4} fill={BLUE} stroke="none" />
-            <line x1={40} y1={28} x2={46} y2={44} />
-            <circle cx={46} cy={48} r={4} fill={BLUE} stroke="none" />
+        <g transform="scale(0.4)" stroke={INK} strokeWidth={7} fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M30 157 H170" stroke={DIM} strokeWidth={5} />
+          <circle cx={100} cy={35} r={10} strokeWidth={4} />
+          <rect x={87} y={46} width={26} height={49} rx={13} fill={INK} stroke="none" />
+          <path d="M93 95 L89 150 M107 95 L111 150" />
+          <path d="M85 58 L85 86 M115 58 L115 86" />
+          <g stroke={BLUE}>
+            <path d="M85 86 L85 114" />
+            <path d="M115 86 L115 114" />
+            <g stroke="none"><Plate x={85} y={114} s={0.85} /><Plate x={115} y={114} s={0.85} /></g>
           </g>
         </g>
       )}
@@ -703,12 +773,8 @@ export function ExerciseAnimation({
       {exerciseId === "one-arm-row" && <RowAnim repSeconds={repSeconds} paused={paused} />}
       {exerciseId === "shoulder-press" && <ShoulderPressAnim repSeconds={repSeconds} paused={paused} />}
       {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
-      {exerciseId === "biceps-curl" && (
-        <RigViews frontId="curl-front-regular" sideId="curl-side" repSeconds={repSeconds} paused={paused} />
-      )}
-      {exerciseId === "biceps-curl-hammer" && (
-        <RigViews frontId="curl-front-hammer" sideId="curl-side" repSeconds={repSeconds} paused={paused} />
-      )}
+      {exerciseId === "biceps-curl" && <CurlViews hammer={false} repSeconds={repSeconds} paused={paused} />}
+      {exerciseId === "biceps-curl-hammer" && <CurlViews hammer={true} repSeconds={repSeconds} paused={paused} />}
       {exerciseId === "triceps-extension" && <TricepsAnim />}
       {!KNOWN_IDS.has(exerciseId) && <GenericAnim />}
       <PhaseCaption />
