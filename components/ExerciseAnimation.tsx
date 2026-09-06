@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Dumbbell, Plate, DumbbellV } from "./bells";
 import { RigFigure } from "./RigFigure";
 import { RIG_DEFS } from "@/lib/poses";
+import rowStyles from "./RowAnimation.module.css";
 
 function usePrefersReducedMotion(): boolean {
   const [reduce, setReduce] = useState(false);
@@ -121,16 +122,29 @@ function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: numbe
   const dur = Math.min(5, Math.max(2.5, repSeconds));
   const motion = !usePrefersReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
+    let cancelled = false;
     boxRef.current?.querySelectorAll("svg").forEach((s) => {
       try {
+        // SMIL's SVG clock can begin before CSS's first rendered frame.
+        // Use the bell's clock so wrists and bells share the same rep instant.
+        const bell = s.querySelector<SVGGElement>("[class^='hf-bench-']");
+        const animation = bell?.getAnimations()[0];
+        const align = () => {
+          const time = animation?.currentTime;
+          if (!cancelled && typeof time === "number") s.setCurrentTime(time / 1000);
+        };
+        align();
         if (paused) s.pauseAnimations();
         else s.unpauseAnimations();
+        // CSS pause/play settles on the next frame; use its final clock value.
+        void animation?.ready.then(align, () => {});
       } catch {
         /* No SMIL clock here — the CSS pause class already froze the bells. */
       }
     });
-  }, [paused]);
+    return () => { cancelled = true; };
+  }, [paused, motion, dur]);
   const side = (
     <>
       <path d="M16 158 H184" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
@@ -195,46 +209,90 @@ function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: numbe
 }
 
 /* ---------------- One-arm row: SIDE + BACK (no nose tick = facing away) ---------------- */
-function RowAnim() {
+function RowArmD({ rest, top, dur, on }: { rest: string; top: string; dur: number; on: boolean }) {
+  if (!on) return null;
+  return (
+    <animate attributeName="d" values={`${rest};${top};${top};${rest};${rest}`}
+      keyTimes="0;0.38;0.52;0.88;1" calcMode="spline"
+      keySplines="0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1"
+      dur={`${dur}s`} repeatCount="indefinite" />
+  );
+}
+
+function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+  const dur = Math.min(5, Math.max(2.5, repSeconds));
+  const motion = !usePrefersReducedMotion();
+  const boxRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    let cancelled = false;
+    boxRef.current?.querySelectorAll("svg").forEach((svg) => {
+      const animation = svg.querySelector("[data-row-bell]")?.getAnimations()[0];
+      const align = () => {
+        const time = animation?.currentTime;
+        if (!cancelled && typeof time === "number") svg.setCurrentTime(time / 1000);
+      };
+      align();
+      if (paused) svg.pauseAnimations();
+      else svg.unpauseAnimations();
+      void animation?.ready.then(align, () => {});
+    });
+    return () => { cancelled = true; };
+  }, [paused, motion, dur]);
+  const sideRest = "M76 76 L78 108 L80 139";
+  const sideTop = "M76 76 L110 62 L106 94";
+  const backRest = "M122 77 L124 108 L126 139";
+  const backTop = "M122 77 L142 66 L142 98";
   const side = (
     <>
-      <rect x={30} y={118} width={110} height={10} rx={2} fill={DIM} />
-      <rect x={40} y={128} width={8} height={28} fill={DIM} />
-      <rect x={122} y={128} width={8} height={28} fill={DIM} />
-      <line x1={55} y1={80} x2={115} y2={80} stroke={INK} strokeWidth={5.5} strokeLinecap="round" />
-      <line x1={114} y1={79} x2={120} y2={73} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      <circle cx={126} cy={68} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
-      <line x1={118} y1={66} x2={112} y2={64} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
-      <line x1={60} y1={80} x2={60} y2={118} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={115} y1={80} x2={110} y2={118} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M95 88 V110" />
-      <g className="hf-anim-row">
-        <line x1={95} y1={82} x2={95} y2={108} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={95} y={114} />
+      <path d="M20 161 H180" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
+      <rect x={37} y={112} width={120} height={9} rx={3} fill={DIM} />
+      <path d="M47 121 V157 M146 121 V157 M39 157 H55 M138 157 H154" fill="none" stroke={DIM} strokeWidth={6} strokeLinecap="round" />
+      {/* Far knee and shin rest on the pad; the near leg reaches the floor. */}
+      <path d="M124 79 L116 108 L147 108 L149 100" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M68 77 L53 108" stroke={INK} strokeWidth={7} strokeLinecap="round" />
+      <rect x={44} y={107} width={18} height={5} rx={2.5} fill={INK} />
+      <rect x={60} y={65} width={72} height={18} rx={9} fill={INK} />
+      <path d="M52 68 L65 73 M126 81 L145 123 L162 157 L149 157" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={43} cy={67} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <path d="M34 70 L30 75 L36 76" fill="none" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d={sideTop} />
+        <rect x={93} y={87} width={26} height={14} rx={3} />
       </g>
+      <path className="hf-traj" d="M80 139 L106 94" />
+      <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d={sideRest}><RowArmD rest={sideRest} top={sideTop} dur={dur} on={motion} /></path>
+        <g data-row-bell className={rowStyles.sideBell} stroke="none"><Dumbbell x={80} y={139} s={0.75} /></g>
+      </g>
+      <circle cx={76} cy={76} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
     </>
   );
   const back = (
     <>
-      <rect x={35} y={118} width={100} height={10} rx={2} fill={DIM} />
-      <rect x={45} y={128} width={8} height={28} fill={DIM} />
-      <rect x={117} y={128} width={8} height={28} fill={DIM} />
-      <line x1={45} y1={80} x2={155} y2={80} stroke={INK} strokeWidth={5.5} strokeLinecap="round" />
-      <line x1={100} y1={73} x2={100} y2={80} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
-      <circle cx={100} cy={64} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
-      <line x1={70} y1={80} x2={70} y2={114} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={140} y1={80} x2={122} y2={106} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <circle cx={118} cy={110} r={7} fill="none" stroke={INK} strokeWidth={3.5} />
-      <line x1={148} y1={80} x2={150} y2={116} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={150} y1={116} x2={156} y2={116} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M138 86 V110" />
-      <g className="hf-anim-row">
-        <line x1={138} y1={82} x2={138} y2={106} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Plate x={138} y={112} />
+      <path d="M22 161 H178" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
+      {/* Rear view, slightly elevated: the pad recedes under the supporting side. */}
+      <path d="M45 108 H98 L110 128 H35 Z" fill={DIM} />
+      <rect x={35} y={128} width={75} height={8} rx={3} fill={DIM} />
+      <path d="M45 136 V157 M98 136 V157 M37 157 H53 M90 157 H106" fill="none" stroke={DIM} strokeWidth={6} strokeLinecap="round" />
+      <path d="M78 77 L63 106" stroke={INK} strokeWidth={7} strokeLinecap="round" />
+      <rect x={54} y={105} width={18} height={5} rx={2.5} fill={INK} />
+      <path d="M88 100 L80 123 L56 123 L52 117 M111 100 L113 129 L117 157 L132 157" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+      <rect x={78} y={70} width={44} height={34} rx={13} fill={INK} />
+      <path d="M100 65 V73" stroke={INK} strokeWidth={6} strokeLinecap="round" />
+      <circle cx={100} cy={56} r={10} fill="none" stroke={INK} strokeWidth={3.5} />
+      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+        <path d={backTop} />
+        <circle cx={142} cy={98} r={9} />
       </g>
+      <path className="hf-traj" d="M126 139 L142 98" />
+      <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d={backRest}><RowArmD rest={backRest} top={backTop} dur={dur} on={motion} /></path>
+        <g data-row-bell className={rowStyles.backBell} stroke="none"><Plate x={126} y={139} s={0.82} /></g>
+      </g>
+      <circle cx={122} cy={77} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
     </>
   );
-  return <Views aLabel="Side" bLabel="Back" a={side} b={back} />;
+  return <div ref={boxRef}><Views aLabel="Side" bLabel="Back" a={side} b={back} /></div>;
 }
 
 /* ---------------- Shoulder press: FRONT (bars) + SIDE profile (plates) ---------------- */
@@ -425,13 +483,16 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
       )}
       {exerciseId === "one-arm-row" && (
         <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
-          <rect x={10} y={46} width={46} height={5} rx={1} fill={DIM} stroke="none" />
-          <line x1={20} y1={30} x2={46} y2={30} strokeWidth={3.5} />
-          <circle cx={52} cy={24} r={4.5} />
-          <g className="hf-anim-row">
-            <line x1={38} y1={31} x2={38} y2={44} />
-            <circle cx={38} cy={47} r={5} fill={BLUE} stroke="none" />
+          <rect x={13} y={44} width={47} height={4} rx={1} fill={DIM} stroke="none" />
+          <path d="M18 48 V62 M55 48 V62 M8 64 H71" stroke={DIM} />
+          <rect x={23} y={24} width={28} height={8} rx={4} fill={INK} stroke="none" />
+          <circle cx={16} cy={25} r={4} />
+          <path d="M20 26 L24 28 L19 42 H15 M47 31 L44 42 H56 M49 32 L56 47 L64 62 H59" strokeLinejoin="round" />
+          <g className={`hf-mover ${rowStyles.miniArm}`}>
+            <line x1={29} y1={28} x2={30} y2={51} />
+            <circle cx={30} cy={53} r={4} fill={BLUE} stroke="none" />
           </g>
+          <circle cx={29} cy={28} r={1.6} fill={BLUE} stroke="#0a1120" strokeWidth={0.6} />
         </g>
       )}
       {exerciseId === "shoulder-press" && (
@@ -611,7 +672,7 @@ export function ExerciseAnimation({
       aria-hidden="false"
     >
       {exerciseId === "bench-press" && <BenchPressAnim repSeconds={repSeconds} paused={paused} />}
-      {exerciseId === "one-arm-row" && <RowAnim />}
+      {exerciseId === "one-arm-row" && <RowAnim repSeconds={repSeconds} paused={paused} />}
       {exerciseId === "shoulder-press" && <ShoulderPressAnim />}
       {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
       {exerciseId === "biceps-curl" && (
