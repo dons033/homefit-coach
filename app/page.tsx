@@ -2,7 +2,8 @@
 
 import { useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { upperBodyA, estimateMinutes } from "@/lib/workout";
+import { upperBodyA, withVariant, estimateMinutes, FOCUS_PRESETS } from "@/lib/workout";
+import { EXERCISE_CATALOG } from "@/lib/exercise-catalog";
 import { DEFAULT_PACING, PACE_LIMITS, loadPacing, savePacing, type PaceSettings } from "@/lib/pacing";
 import { useWorkoutController } from "@/hooks/useWorkoutController";
 import { WorkoutPlayer } from "@/components/WorkoutPlayer";
@@ -56,9 +57,17 @@ function Stepper({
 function HomeInner() {
   const params = useSearchParams();
   const fast = params.get("fast") === "1";
-  const workout = upperBodyA;
   const [pacing, setPacing] = useState<PaceSettings>(loadPacing);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // User-chosen variants applied over the programmed workout.
+  const workout = useMemo(() => {
+    let w = upperBodyA;
+    for (const [id, ep] of Object.entries(pacing.exercises)) {
+      if (ep.variantId) w = withVariant(w, id, ep.variantId);
+    }
+    return w;
+  }, [pacing.exercises]);
   const ctl = useWorkoutController(workout, { fast, pacing });
 
   const updatePacing = (patch: Partial<PaceSettings>) => {
@@ -69,7 +78,7 @@ function HomeInner() {
     });
   };
 
-  const updateExercisePacing = (id: string, patch: { workSeconds?: number; restSeconds?: number }) => {
+  const updateExercisePacing = (id: string, patch: { workSeconds?: number; restSeconds?: number; variantId?: string }) => {
     setPacing((p) => {
       const next = { ...p, exercises: { ...p.exercises, [id]: { ...p.exercises[id], ...patch } } };
       savePacing(next);
@@ -85,6 +94,11 @@ function HomeInner() {
       savePacing(next);
       return next;
     });
+  };
+
+  const setExerciseVariant = (id: string, variantId: string) => {
+    updateExercisePacing(id, { variantId });
+    setExpandedId(null);
   };
 
   /** Effective work/rest for an exercise: per-exercise → global custom → programmed. */
@@ -110,6 +124,12 @@ function HomeInner() {
             <h1 className="text-6xl font-extrabold leading-tight">{workout.name}</h1>
             <p className="mt-2 text-2xl text-slate-400">
               6 exercises • ~{minutes} minutes • Dumbbells + bench
+            </p>
+            <p className="mt-2">
+              <span className="mr-2 inline-block rounded-lg bg-green-500/15 px-3 py-1 text-lg font-bold text-green-300">
+                {FOCUS_PRESETS[workout.focus].label}
+              </span>
+              <span className="text-lg text-slate-400">{FOCUS_PRESETS[workout.focus].blurb}</span>
             </p>
             {fast && (
               <p className="mt-2 inline-block rounded-lg bg-amber-400/15 px-3 py-1 text-lg font-bold text-amber-300">
@@ -200,7 +220,7 @@ function HomeInner() {
                       className="flex w-full items-center gap-4 text-left"
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xl font-bold">{i + 1}</span>
-                      <ExerciseAnimation exerciseId={e.id} variant="mini" />
+                      <ExerciseAnimation exerciseId={e.animationId} variant="mini" />
                       <div className="flex-1">
                         <div className="text-2xl font-bold leading-tight">
                           {e.name}
@@ -214,6 +234,26 @@ function HomeInner() {
                     </button>
                     {open && (
                       <div className="mt-2 space-y-2 pl-14">
+                        {Object.keys(EXERCISE_CATALOG[e.id]?.variants ?? {}).length > 1 && (
+                          <div className="flex flex-wrap gap-2">
+                            {Object.values(EXERCISE_CATALOG[e.id].variants).map((v) => (
+                              <button
+                                key={v.id}
+                                onClick={() => setExerciseVariant(e.id, v.id)}
+                                aria-pressed={e.variantId === v.id}
+                                title={v.notes ?? v.label}
+                                className={`min-h-[48px] rounded-xl px-4 text-lg font-bold ${e.variantId === v.id ? "bg-sky-500 text-slate-950" : "bg-slate-700 text-white"}`}
+                              >
+                                {v.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {EXERCISE_CATALOG[e.id]?.variants[e.variantId]?.notes && (
+                          <p className="text-base text-sky-300/90">
+                            {EXERCISE_CATALOG[e.id].variants[e.variantId].notes}
+                          </p>
+                        )}
                         <Stepper label="Work" value={eff.work} unit="s"
                           min={PACE_LIMITS.work.min} max={PACE_LIMITS.work.max} step={PACE_LIMITS.work.step}
                           onChange={(v) => updateExercisePacing(e.id, { workSeconds: v })} />

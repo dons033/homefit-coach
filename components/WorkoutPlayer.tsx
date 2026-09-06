@@ -200,7 +200,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
 
           <div className="mt-2 w-full max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
             <ExerciseAnimation
-              exerciseId={centerExercise.id}
+              exerciseId={centerExercise.animationId}
               repSeconds={ctl.effSecs(centerExercise).work / centerExercise.targetReps}
               paused={paused}
             />
@@ -271,7 +271,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
           <div className="mb-2 text-xl font-bold">Next Up</div>
           {nextStep && phase !== "resting" ? (
             <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-3">
-              <ExerciseAnimation exerciseId={nextStep.exercise.id} variant="mini" />
+              <ExerciseAnimation exerciseId={nextStep.exercise.animationId} variant="mini" />
               <div className="mt-1 text-xl font-bold">{nextStep.exercise.name}{setLabel(nextStep.exercise, nextStep.setNumber) ? ` — ${setLabel(nextStep.exercise, nextStep.setNumber)}` : ""}</div>
               <div className="text-base text-slate-400">Set {nextStep.setNumber} of {nextStep.exercise.sets} • {nextStep.exercise.targetReps} reps • {ctl.effSecs(nextStep.exercise).rest}s rest</div>
             </div>
@@ -286,7 +286,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
           <div className="space-y-2">
             {workout.exercises.slice(exerciseIndex + (phase === "resting" && nextStep && nextStep.exerciseIndex > exerciseIndex ? 1 : 0) + 1, exerciseIndex + 4).map((e) => (
               <div key={e.id} className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-2">
-                <ExerciseAnimation exerciseId={e.id} variant="mini" />
+                <ExerciseAnimation exerciseId={e.animationId} variant="mini" />
                 <div>
                   <div className="text-lg font-bold leading-tight">{e.shortName}</div>
                   <div className="text-sm text-slate-400">{e.sets} × {e.targetReps} • {ctl.effSecs(e).rest}s</div>
@@ -313,7 +313,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
             <div className="text-sm uppercase tracking-wider text-sky-300">Up next</div>
             <div className="text-2xl font-bold">{nextStep ? nextStep.exercise.name : "Done"}</div>
           </div>
-          {nextStep && <ExerciseAnimation exerciseId={nextStep.exercise.id} variant="mini" />}
+          {nextStep && <ExerciseAnimation exerciseId={nextStep.exercise.animationId} variant="mini" />}
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm uppercase tracking-wider text-sky-300">Get ready</span>

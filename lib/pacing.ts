@@ -8,6 +8,8 @@
 export type ExercisePacing = {
   workSeconds?: number;
   restSeconds?: number;
+  /** Chosen variant id for this exercise (persisted variant picker). */
+  variantId?: string;
 };
 
 export type PaceSettings = {
@@ -49,7 +51,10 @@ function cleanExerciseMap(raw: unknown): Record<string, ExercisePacing> {
     if (typeof e.restSeconds === "number") {
       entry.restSeconds = clamp(Math.round(e.restSeconds), PACE_LIMITS.rest.min, PACE_LIMITS.rest.max);
     }
-    if (entry.workSeconds !== undefined || entry.restSeconds !== undefined) out[id] = entry;
+    if (typeof e.variantId === "string" && e.variantId) {
+      entry.variantId = e.variantId;
+    }
+    if (entry.workSeconds !== undefined || entry.restSeconds !== undefined || entry.variantId !== undefined) out[id] = entry;
   }
   return out;
 }

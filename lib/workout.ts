@@ -2,8 +2,13 @@ import { EXERCISE_CATALOG, getExerciseInfo } from "./exercise-catalog";
 
 export type Exercise = {
   id: string;
+  /** Display name — includes variant label when non-default ("… — Floor"). */
   name: string;
   shortName: string;
+  /** Figure key for ExerciseAnimation (resolved from the variant). */
+  animationId: string;
+  /** Chosen variant id (for pickers/debugging). */
+  variantId: string;
   sets: number;
   targetReps: number;
   workSeconds: number;
@@ -17,15 +22,59 @@ export type Workout = {
   id: string;
   name: string;
   tagline: string;
+  focus: ProgramFocus;
   /** Reserved for later: optional seconds of easy marching before set 1. Unused in v1. */
   warmupSeconds?: number;
   exercises: Exercise[];
 };
 
+/* Program focuses — one set of basics, programmed many ways.
+ * A mass day and an endurance day can both contain bench press;
+ * the focus decides reps, rest, and intent. */
+export type ProgramFocus = "mass" | "lean" | "strength" | "endurance" | "athleticism";
+
+export const FOCUS_PRESETS: Record<
+  ProgramFocus,
+  { label: string; blurb: string; reps: string; rest: string }
+> = {
+  mass: {
+    label: "Mass",
+    blurb: "Moderate-heavy basics, full recovery. Eat big, sleep big.",
+    reps: "6–12",
+    rest: "90–180s",
+  },
+  lean: {
+    label: "Lean",
+    blurb: "Hold muscle in a deficit. Stop 1–2 reps before failure.",
+    reps: "8–12",
+    rest: "60–90s",
+  },
+  strength: {
+    label: "Strength",
+    blurb: "Heavy compounds, long rests. Few reps, full intent.",
+    reps: "3–6",
+    rest: "2–4 min",
+  },
+  endurance: {
+    label: "Endurance",
+    blurb: "Lighter loads, short rests, high reps. Keep moving.",
+    reps: "15+",
+    rest: "30–45s",
+  },
+  athleticism: {
+    label: "Athleticism",
+    blurb: "Power + balance + control. Single-arm/leg and stance work.",
+    reps: "5–10",
+    rest: "90–120s",
+  },
+};
+
 /** One line per movement. Programming (sets/reps/timers) lives here;
- *  names + cues come from the catalog, so reusing a move is one line. */
+ *  names + cues + figures come from the catalog, so reusing a move —
+ *  in any focus, any variant — is one line. */
 type WorkoutEntry = {
   exerciseId: string;
+  variantId?: string;
   sets: number;
   targetReps: number;
   workSeconds: number;
@@ -33,13 +82,25 @@ type WorkoutEntry = {
   sides?: string[];
 };
 
+function resolveVariant(info: ReturnType<typeof getExerciseInfo>, variantId?: string) {
+  return (
+    (variantId && info.variants[variantId]) ||
+    info.variants[info.defaultVariant] ||
+    Object.values(info.variants)[0]
+  );
+}
+
 function buildExercise(e: WorkoutEntry): Exercise {
   const info = getExerciseInfo(e.exerciseId);
+  const variant = resolveVariant(info, e.variantId);
+  const isDefault = variant.id === info.defaultVariant;
   return {
     id: info.id,
-    name: info.name,
+    name: isDefault ? info.name : `${info.name} — ${variant.label}`,
     shortName: info.shortName,
-    cues: info.cues,
+    animationId: variant.animationId,
+    variantId: variant.id,
+    cues: variant.cues,
     sets: e.sets,
     targetReps: e.targetReps,
     workSeconds: e.workSeconds,
@@ -48,10 +109,31 @@ function buildExercise(e: WorkoutEntry): Exercise {
   };
 }
 
+/** Rebuild one exercise of a workout with a different variant,
+ *  keeping its programming. Powers the home-screen variant picker. */
+export function withVariant(workout: Workout, exerciseId: string, variantId: string): Workout {
+  return {
+    ...workout,
+    exercises: workout.exercises.map((ex) => {
+      if (ex.id !== exerciseId) return ex;
+      return buildExercise({
+        exerciseId: ex.id,
+        variantId,
+        sets: ex.sets,
+        targetReps: ex.targetReps,
+        workSeconds: ex.workSeconds,
+        restSeconds: ex.restSeconds,
+        sides: ex.sides,
+      });
+    }),
+  };
+}
+
 function buildWorkout(
   id: string,
   name: string,
   tagline: string,
+  focus: ProgramFocus,
   entries: WorkoutEntry[],
   warmupSeconds = 0
 ): Workout {
@@ -63,13 +145,14 @@ function buildWorkout(
       }
     });
   }
-  return { id, name, tagline, warmupSeconds, exercises: entries.map(buildExercise) };
+  return { id, name, tagline, focus, warmupSeconds, exercises: entries.map(buildExercise) };
 }
 
 export const upperBodyA: Workout = buildWorkout(
   "upper-body-a",
   "Upper Body A",
   "Strength • 6 Exercises • ~40 Minutes",
+  "lean",
   [
     // Muscle-preservation programming (GLP-1 friendly):
     // moderate 8–12 rep range, stop 1–2 reps before failure,
@@ -91,7 +174,7 @@ export const upperBodyA: Workout = buildWorkout(
     // To add a move: add it to EXERCISE_CATALOG, then one line here, e.g.
     // { exerciseId: "goblet-squat", sets: 3, targetReps: 12, workSeconds: 40, restSeconds: 60 },
   ]
-  // To enable a warmup later: pass seconds as 5th arg, e.g. buildWorkout(..., 60)
+  // To enable a warmup later: pass seconds as 6th arg, e.g. buildWorkout(..., 60)
 );
 
 export const workouts: Record<string, Workout> = { "upper-body-a": upperBodyA };
