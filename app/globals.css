@@ -156,21 +156,41 @@ body {
   transform-box: view-box;
   transform-origin: 76px 56px;
 }
-/* Triceps side: rigid forearm rotation about the pinned elbow; bell rides
- * in-group so it tracks and tilts with the wrists. Front view bell (drawn
- * behind the head) rides CSS translate in ExerciseAnimation.tsx. */
-@keyframes hf-tri-side {
+/* Triceps: rep starts behind the head and presses UP (flip of the old
+ * windows). Side forearm rotates about the pinned elbow; the bell orbits
+ * the same elbow in an outer group while an inner counter-rotation keeps
+ * it upright, so it tracks the hand's arc without tilting. Front bell
+ * rides a straight translate behind the head. */
+@keyframes hf-tri-side-arm {
   0%, 88%, 100% { transform: rotate(0deg); }
-  38%, 52% { transform: rotate(115deg); }
+  38%, 52% { transform: rotate(-115deg); }
 }
-.hf-tri-side {
-  animation: hf-tri-side var(--rep-dur, 4s) ease-in-out infinite;
+.hf-tri-side-arm {
+  animation: hf-tri-side-arm var(--rep-dur, 4s) ease-in-out infinite;
   transform-box: view-box;
   transform-origin: 86px 34px;
 }
+@keyframes hf-tri-side-orbit {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  38%, 52% { transform: rotate(-115deg); }
+}
+.hf-tri-side-orbit {
+  animation: hf-tri-side-orbit var(--rep-dur, 4s) ease-in-out infinite;
+  transform-box: view-box;
+  transform-origin: 86px 34px;
+}
+@keyframes hf-tri-side-counter {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  38%, 52% { transform: rotate(115deg); }
+}
+.hf-tri-side-counter {
+  animation: hf-tri-side-counter var(--rep-dur, 4s) ease-in-out infinite;
+  transform-box: view-box;
+  transform-origin: 104px 48px;
+}
 @keyframes hf-tri-front-bell {
   0%, 88%, 100% { transform: translate(0, 0); }
-  38%, 52% { transform: translate(0, 28px); }
+  38%, 52% { transform: translate(0, -28px); }
 }
 .hf-tri-front-bell { animation: hf-tri-front-bell var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-row { animation: hf-row var(--rep-dur, 4s) ease-in-out infinite; }
@@ -253,7 +273,10 @@ body {
   .hf-curl-hammer-left-bell,
   .hf-curl-hammer-right-bell,
   .hf-raise-side,
-  .hf-tri-side,
+  .hf-tri-side-arm,
+  .hf-tri-side-orbit,
+  .hf-tri-side-counter,
+  .hf-tri-front-bell,
   .hf-tri-front-bell,
   .hf-anim-press,
   .hf-anim-row,

@@ -376,6 +376,9 @@ function ShoulderPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: nu
         <circle cx={72} cy={10} r={10} />
       </g>
       <path className="hf-traj" d="M66 52 L72 10" />
+      {/* In a press the arms work slightly IN FRONT of the face plane —
+       * arm and bell render after the head so they stay visible. */}
+      <SideHead />
       <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
         <path d={SP_SIDE_REST}>
           <ArmMorphD rest={SP_SIDE_REST} top={SP_SIDE_TOP} dur={dur} on={motion} />
@@ -383,7 +386,6 @@ function ShoulderPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: nu
         <g data-sp-bell className="hf-sp-side-bell" stroke="none"><Plate x={66} y={52} s={0.9} /></g>
       </g>
       <circle cx={76} cy={56} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
-      <SideHead />
     </>
   );
   return (
@@ -517,16 +519,16 @@ function CurlViews({ hammer, repSeconds, paused }: { hammer: boolean; repSeconds
 }
 
 /* ---------------- Overhead triceps: SIDE profile + FRONT (vertical bell) ----------------
- * Lockout: arms extended overhead, bell vertical. Lower: elbows stay pinned
- * beside the head while the forearms fold back, taking the bell behind the
- * head. Front view foreshortens the fold (SMIL morph — the hand travels a
- * line); the bell rides CSS translate and passes BEHIND the head (drawn
- * before the body). Side view: rigid forearm rotation about the elbow (CSS
- * rotate, bell in-group so it tracks and tilts with the wrists). */
-const TRI_FRONT_REST_L = "M85 30 L93 14";
-const TRI_FRONT_TOP_L = "M85 30 L92 42";
-const TRI_FRONT_REST_R = "M115 30 L107 14";
-const TRI_FRONT_TOP_R = "M115 30 L108 42";
+ * The rep starts BEHIND the head (forearms folded) and presses the bell UP
+ * to lockout — same bottom-to-top reading as every other exercise, so the
+ * LIFT caption matches. The bell stays VERTICAL in both views: front rides
+ * CSS translate behind the head; side orbits the elbow via an outer
+ * rotation with an inner counter-rotation, so it follows the hand's arc
+ * without tilting (forearm itself rotates in its own group). */
+const TRI_FRONT_REST_L = "M85 30 L92 42";
+const TRI_FRONT_TOP_L = "M85 30 L93 14";
+const TRI_FRONT_REST_R = "M115 30 L108 42";
+const TRI_FRONT_TOP_R = "M115 30 L107 14";
 
 function TricepsAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
   const dur = Math.min(5, Math.max(2.5, repSeconds));
@@ -537,15 +539,21 @@ function TricepsAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; 
     <>
       <StandingSide />
       <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
-        <path d="M86 34 L104 48" />
-        <rect x={93} y={42} width={22} height={12} rx={6} />
+        <path d="M86 34 L91 12" />
+        <rect x={88} y={1} width={6} height={22} rx={3} />
       </g>
-      <path className="hf-traj" d="M91 12 A23 23 0 0 1 104 48" />
+      <path className="hf-traj" d="M104 48 A23 23 0 0 0 91 12" />
       {/* Upper arm: pinned beside the head, renders blue with the forearm. */}
       <path d="M76 54 L86 34" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" />
-      <g className="hf-mover hf-tri-side" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M86 34 L91 12" />
-        <g stroke="none"><DumbbellV x={91} y={12} s={0.55} /></g>
+      <g className="hf-mover hf-tri-side-arm" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M86 34 L104 48" />
+      </g>
+      {/* Bell orbits the elbow but stays upright: outer rotation moves it
+       * along the hand's arc, inner counter-rotation cancels the tilt. */}
+      <g className="hf-tri-side-orbit">
+        <g className="hf-tri-side-counter">
+          <DumbbellV x={104} y={48} s={0.55} />
+        </g>
       </g>
       <SideHead />
       <circle cx={86} cy={34} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
@@ -554,13 +562,13 @@ function TricepsAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; 
   const front = (
     <>
       {/* Bell + trajectory first: they pass BEHIND the head, as in the lift. */}
-      <path className="hf-traj" d="M100 14 V42" />
-      <g data-tri-bell className="hf-tri-front-bell" stroke="none"><DumbbellV x={100} y={14} s={0.65} /></g>
+      <path className="hf-traj" d="M100 42 L100 14" />
+      <g data-tri-bell className="hf-tri-front-bell" stroke="none"><DumbbellV x={100} y={42} s={0.65} /></g>
       <StandingFront />
       <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
         <path d={TRI_FRONT_TOP_L} />
         <path d={TRI_FRONT_TOP_R} />
-        <rect x={95.5} y={28.5} width={9} height={27} rx={4.5} />
+        <rect x={95.5} y={1} width={9} height={26} rx={4.5} />
       </g>
       <g className="hf-mover" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
         {/* Upper arms pinned beside the head, blue with the forearms. */}
