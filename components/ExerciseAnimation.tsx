@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { Dumbbell, Plate, DumbbellV } from "./bells";
 import { RigFigure } from "./RigFigure";
 import { RIG_DEFS } from "@/lib/poses";
+import { GsapBenchAnim } from "./GsapBench";
 import rowStyles from "./RowAnimation.module.css";
 
 function usePrefersReducedMotion(): boolean {
@@ -785,6 +786,7 @@ export function LabScrub({ exerciseId, phase, repSeconds }: { exerciseId: string
       {exerciseId === "biceps-curl" && <CurlViews hammer={false} repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "biceps-curl-hammer" && <CurlViews hammer={true} repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "triceps-extension" && <TricepsAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "bench-press-gsap" && <GsapBenchAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
       <PhaseCaption />
     </div>
   );
@@ -811,13 +813,20 @@ export function ExerciseAnimation({
   repSeconds = 4,
   /** Freeze mid-pose (workout paused). */
   paused = false,
+  /** Optional exact rep instant (0..1) to freeze at — the player passes it
+   *  when paused mid-work so the figure matches the timer, not an arbitrary
+   *  instant. CSS bells/captions seek via --phase-delay; SMIL via the figure
+   *  hooks; the GSAP prototype via tl.progress(). */
+  phase = null,
 }: {
   exerciseId: string;
   variant?: "full" | "mini";
   className?: string;
   repSeconds?: number;
   paused?: boolean;
+  phase?: number | null;
 }) {
+  const durClamped = Math.min(5, Math.max(2.5, repSeconds));
   if (variant === "mini") {
     if (!KNOWN_IDS.has(exerciseId)) {
       return (
@@ -846,16 +855,22 @@ export function ExerciseAnimation({
   return (
     <div
       className={`${paused ? "hf-paused" : ""} ${className}`}
-      style={{ "--rep-dur": `${Math.min(5, Math.max(2.5, repSeconds))}s` } as CSSProperties}
+      style={
+        {
+          "--rep-dur": `${durClamped}s`,
+          ...(phase !== null ? { "--phase-delay": `${-phase * durClamped}s` } : {}),
+        } as CSSProperties
+      }
       aria-hidden="false"
     >
-      {exerciseId === "bench-press" && <BenchPressAnim repSeconds={repSeconds} paused={paused} />}
-      {exerciseId === "one-arm-row" && <RowAnim repSeconds={repSeconds} paused={paused} />}
-      {exerciseId === "shoulder-press" && <ShoulderPressAnim repSeconds={repSeconds} paused={paused} />}
+      {exerciseId === "bench-press" && <BenchPressAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "one-arm-row" && <RowAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "shoulder-press" && <ShoulderPressAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
-      {exerciseId === "biceps-curl" && <CurlViews hammer={false} repSeconds={repSeconds} paused={paused} />}
-      {exerciseId === "biceps-curl-hammer" && <CurlViews hammer={true} repSeconds={repSeconds} paused={paused} />}
-      {exerciseId === "triceps-extension" && <TricepsAnim repSeconds={repSeconds} paused={paused} />}
+      {exerciseId === "biceps-curl" && <CurlViews hammer={false} repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "biceps-curl-hammer" && <CurlViews hammer={true} repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "triceps-extension" && <TricepsAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "bench-press-gsap" && <GsapBenchAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
       {!KNOWN_IDS.has(exerciseId) && <GenericAnim />}
       <PhaseCaption />
     </div>

@@ -14,6 +14,7 @@ import { RIG_DEF_LIST, RIG_DEFS } from "@/lib/poses";
 
 const HAND_DEFS: { id: string; label: string }[] = [
   { id: "bench-press", label: "Bench press" },
+  { id: "bench-press-gsap", label: "Bench press (GSAP)" },
   { id: "one-arm-row", label: "One-arm row" },
   { id: "shoulder-press", label: "Shoulder press" },
   { id: "lateral-raise", label: "Lateral raise" },

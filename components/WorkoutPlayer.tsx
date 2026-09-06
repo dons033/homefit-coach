@@ -78,6 +78,19 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
         })()
       : null;
 
+  // Pause-sync: when paused mid-work, freeze the figure at the exact rep
+  // instant the timer stopped on — instead of wherever the CSS/SMIL clocks
+  // happened to be. Rest/ready pauses keep the old freeze-in-place behavior.
+  const repFreeze =
+    paused && phase === "working"
+      ? (() => {
+          const repSecs = ctl.effSecs(exercise).work / exercise.targetReps;
+          const elapsed = ctl.totalDuration - secondsRemaining;
+          const frac = elapsed / repSecs;
+          return frac - Math.floor(frac);
+        })()
+      : null;
+
   if (phase === "complete") {
     const totalMs = workoutStart ? (workoutEnd ?? Date.now()) - workoutStart : 0;
     return (
@@ -222,6 +235,7 @@ export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: Workout
               exerciseId={centerExercise.animationId}
               repSeconds={ctl.effSecs(centerExercise).work / centerExercise.targetReps}
               paused={paused}
+              phase={repFreeze}
             />
             <div className="mt-1 flex justify-center">
               <button
