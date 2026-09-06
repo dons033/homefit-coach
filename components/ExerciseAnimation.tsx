@@ -109,6 +109,7 @@ function RowAnim() {
       <rect x={40} y={128} width={8} height={28} fill={DIM} />
       <rect x={122} y={128} width={8} height={28} fill={DIM} />
       <line x1={55} y1={80} x2={115} y2={80} stroke={INK} strokeWidth={5.5} strokeLinecap="round" />
+      <line x1={114} y1={79} x2={120} y2={73} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />
       <circle cx={126} cy={68} r={9} fill="none" stroke={INK} strokeWidth={3.5} />
       <line x1={118} y1={66} x2={112} y2={64} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
       <line x1={60} y1={80} x2={60} y2={118} stroke={INK} strokeWidth={4} strokeLinecap="round" />
@@ -123,15 +124,17 @@ function RowAnim() {
   return <Pair startLabel="Hang" endLabel="Row to hip" baseClass="hf-anim-row" pose={pose} />;
 }
 
-function StandingFigure() {
+function StandingFigure({ spread = 18 }: { spread?: number }) {
+  // spread = half-distance between the feet; curl narrows it so hanging
+  // bells clear the legs in front view.
   return (
     <>
       <circle cx={100} cy={28} r={11} fill="none" stroke={INK} strokeWidth={4} />
       <line x1={100} y1={40} x2={100} y2={105} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
-      <line x1={100} y1={105} x2={82} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={105} x2={118} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={82} y1={150} x2={74} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={118} y1={150} x2={126} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={105} x2={100 - spread} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={105} x2={100 + spread} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100 - spread} y1={150} x2={100 - spread - 8} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100 + spread} y1={150} x2={100 + spread + 8} y2={150} stroke={INK} strokeWidth={4} strokeLinecap="round" />
     </>
   );
 }
@@ -142,15 +145,15 @@ function ShoulderPressAnim() {
     <>
       <StandingFigure />
       {/* upper arms held horizontal — the press moves forearms + bells */}
-      <line x1={100} y1={62} x2={76} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <line x1={100} y1={62} x2={124} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      <path className="hf-traj" d="M76 28 V58" />
-      <path className="hf-traj" d="M124 28 V58" />
+      <line x1={100} y1={62} x2={72} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={100} y1={62} x2={128} y2={62} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <path className="hf-traj" d="M72 28 V58" />
+      <path className="hf-traj" d="M128 28 V58" />
       <g className={cls}>
-        <line x1={76} y1={62} x2={76} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <line x1={124} y1={62} x2={124} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={76} y={34} />
-        <Dumbbell x={124} y={34} />
+        <line x1={72} y1={62} x2={72} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <line x1={128} y1={62} x2={128} y2={40} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={72} y={34} />
+        <Dumbbell x={128} y={34} />
       </g>
     </>
   );
@@ -183,7 +186,7 @@ function LateralRaiseAnim() {
 function CurlAnim() {
   const pose = (cls: string) => (
     <>
-      <StandingFigure />
+      <StandingFigure spread={10} />
       <line x1={100} y1={62} x2={82} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
       <line x1={100} y1={62} x2={118} y2={86} stroke={INK} strokeWidth={4} strokeLinecap="round" />
       <path className="hf-traj" d="M82 120 A38 38 0 0 1 66 62" />
@@ -207,24 +210,32 @@ function CurlAnim() {
   return <Pair startLabel="Down" endLabel="Curl up" baseClass="hf-anim-curl" pose={pose} />;
 }
 
-/* ---------------- Overhead triceps: elbows pinned up, forearms hinge ---------------- */
+/* ---------------- Overhead triceps: profile view, elbow hinges bell behind head ----------------
+ * Front view can't show behind-the-head motion (it's in the camera axis),
+ * so this one is drawn in profile facing left: bell travels overhead → behind. */
 function TricepsAnim() {
   const pose = (cls: string) => (
-    <>
-      <StandingFigure />
-      {/* upper arms pinned vertical, close to the head (see reference photo) */}
-      <line x1={100} y1={62} x2={100} y2={40} stroke={INK} strokeWidth={5} strokeLinecap="round" />
-      <path className="hf-traj" d="M100 10 A32 32 0 0 0 70 50" />
+    <g transform="translate(10 6) scale(0.9)">
+      <circle cx={58} cy={42} r={10} fill="none" stroke={INK} strokeWidth={4} />
+      <line x1={49} y1={40} x2={44} y2={38} stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
+      <line x1={70} y1={54} x2={70} y2={114} stroke={INK} strokeWidth={4.5} strokeLinecap="round" />
+      <line x1={70} y1={114} x2={58} y2={158} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={70} y1={114} x2={84} y2={158} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={58} y1={158} x2={50} y2={158} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <line x1={84} y1={158} x2={92} y2={158} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      {/* upper arm pinned near-vertical beside the head */}
+      <line x1={70} y1={56} x2={73} y2={34} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+      <path className="hf-traj" d="M76 8 A30 30 0 0 1 100 46" />
       <g
         className={cls}
-        style={{ transformBox: "view-box", transformOrigin: "100px 40px" }}
+        style={{ transformBox: "view-box", transformOrigin: "73px 34px" }}
       >
-        <line x1={100} y1={40} x2={100} y2={14} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Dumbbell x={100} y={8} />
+        <line x1={73} y1={34} x2={75} y2={12} stroke={INK} strokeWidth={4} strokeLinecap="round" />
+        <Dumbbell x={75} y={6} />
       </g>
-    </>
+    </g>
   );
-  return <Pair startLabel="Behind head" endLabel="Press up" baseClass="hf-anim-tri" pose={pose} />;
+  return <Pair startLabel="Overhead" endLabel="Behind head" baseClass="hf-anim-trirear" pose={pose} />;
 }
 
 /** Krita sprite strip: stepped playback on the same rep tempo. */

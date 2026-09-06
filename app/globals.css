@@ -51,6 +51,15 @@ body {
   88% { transform: rotate(-30deg); }
   100% { transform: rotate(-30deg); }
 }
+/* Right arm plays NEGATED angles (not time-reversed) so the pair stays
+ * mirror-symmetric: at every instant right = mirror of left. */
+@keyframes hf-raise-r {
+  0% { transform: rotate(30deg); }
+  38% { transform: rotate(-30deg); }
+  52% { transform: rotate(-30deg); }
+  88% { transform: rotate(30deg); }
+  100% { transform: rotate(30deg); }
+}
 @keyframes hf-curl {
   0% { transform: rotate(0deg); }
   38% { transform: rotate(-135deg); }
@@ -62,6 +71,14 @@ body {
   0% { transform: rotate(0deg); }
   38% { transform: rotate(-100deg); }
   52% { transform: rotate(-100deg); }
+  88% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+/* Profile rear hinge (overhead → behind head): clockwise in screen space. */
+@keyframes hf-trirear {
+  0% { transform: rotate(0deg); }
+  38% { transform: rotate(108deg); }
+  52% { transform: rotate(108deg); }
   88% { transform: rotate(0deg); }
   100% { transform: rotate(0deg); }
 }
@@ -77,9 +94,10 @@ body {
 .hf-anim-press { animation: hf-press var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-row { animation: hf-row var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-raise-l { animation: hf-raise var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
-.hf-anim-raise-r { animation: hf-raise var(--rep-dur, 4s) ease-in-out infinite reverse; transform-box: fill-box; transform-origin: top center; }
+.hf-anim-raise-r { animation: hf-raise-r var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-curl { animation: hf-curl var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
 .hf-anim-tri { animation: hf-tri var(--rep-dur, 4s) ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
+.hf-anim-trirear { animation: hf-trirear var(--rep-dur, 4s) ease-in-out infinite; }
 .hf-anim-soft { animation: hf-breathe 2.4s ease-in-out infinite; }
 
 /* Start/end pair partner: runs half a rep out of phase, tempo-relative. */
@@ -126,6 +144,7 @@ body {
   .hf-anim-raise-r,
   .hf-anim-curl,
   .hf-anim-tri,
+  .hf-anim-trirear,
   .hf-anim-soft,
   .hf-sprite,
   .hf-cap-lift,
