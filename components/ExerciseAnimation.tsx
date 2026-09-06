@@ -117,18 +117,26 @@ function ArmMorphD({ rest, top, dur, on }: { rest: string; top: string; dur: num
 
 /** SMIL's clock can start before the first rendered CSS frame, so align it
  *  to a CSS-animated element (bells share the document timeline). Also
- *  freezes SMIL on pause — the CSS bells freeze via .hf-paused. */
+ *  freezes SMIL on pause — the CSS bells freeze via .hf-paused. With a
+ *  `phase` (0..1, /lab scrub) it freezes and seeks every svg to that
+ *  rep instant instead. */
 function useSmilClock(
   boxRef: React.RefObject<HTMLDivElement | null>,
   selector: string,
   paused: boolean,
   motion: boolean,
   dur: number,
+  phase: number | null = null,
 ) {
   useLayoutEffect(() => {
     let cancelled = false;
     boxRef.current?.querySelectorAll("svg").forEach((s) => {
       try {
+        if (phase !== null) {
+          s.pauseAnimations();
+          s.setCurrentTime(phase * dur);
+          return;
+        }
         const bell = s.querySelector(selector);
         const animation = bell?.getAnimations()[0];
         const align = () => {
@@ -145,7 +153,7 @@ function useSmilClock(
       }
     });
     return () => { cancelled = true; };
-  }, [boxRef, selector, paused, motion, dur]);
+  }, [boxRef, selector, paused, motion, dur, phase]);
 }
 const SIDE_REST = "M65 101 L90 110 L90 77";
 const SIDE_TOP = "M65 101 L68 68 L66 36";
@@ -154,11 +162,11 @@ const FL_TOP = "M84 106 L81 75 L79 43";
 const FR_REST = "M116 106 L147 115 L147 81";
 const FR_TOP = "M116 106 L119 75 L121 43";
 
-function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+function BenchPressAnim({ repSeconds = 4, paused = false, phase = null }: { repSeconds?: number; paused?: boolean; phase?: number | null }) {
   const dur = Math.min(5, Math.max(2.5, repSeconds));
   const motion = !usePrefersReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
-  useSmilClock(boxRef, "[class^='hf-bench-']", paused, motion, dur);
+  useSmilClock(boxRef, "[class^='hf-bench-']", paused, motion, dur, phase);
   const side = (
     <>
       <path d="M16 158 H184" stroke={DIM} strokeWidth={2} strokeLinecap="round" />
@@ -223,11 +231,11 @@ function BenchPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: numbe
 }
 
 /* ---------------- One-arm row: SIDE + BACK (no nose tick = facing away) ---------------- */
-function RowAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+function RowAnim({ repSeconds = 4, paused = false, phase = null }: { repSeconds?: number; paused?: boolean; phase?: number | null }) {
   const dur = Math.min(5, Math.max(2.5, repSeconds));
   const motion = !usePrefersReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
-  useSmilClock(boxRef, "[data-row-bell]", paused, motion, dur);
+  useSmilClock(boxRef, "[data-row-bell]", paused, motion, dur, phase);
   const sideRest = "M76 76 L78 108 L80 139";
   const sideTop = "M76 76 L110 62 L106 94";
   const backRest = "M122 77 L124 108 L126 139";
@@ -338,11 +346,11 @@ const SP_FRONT_TOP_R = "M115 58 L114 37 L114 16";
 const SP_SIDE_REST = "M76 56 L66 76 L66 58";
 const SP_SIDE_TOP = "M76 56 L74 35 L72 14";
 
-function ShoulderPressAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+function ShoulderPressAnim({ repSeconds = 4, paused = false, phase = null }: { repSeconds?: number; paused?: boolean; phase?: number | null }) {
   const dur = Math.min(5, Math.max(2.5, repSeconds));
   const motion = !usePrefersReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
-  useSmilClock(boxRef, "[data-sp-bell]", paused, motion, dur);
+  useSmilClock(boxRef, "[data-sp-bell]", paused, motion, dur, phase);
   const front = (
     <>
       <StandingFront />
@@ -445,11 +453,11 @@ function LateralRaiseAnim() {
  * a line and the bell rides a matching CSS translate. Hammer = same hinge,
  * plate bells, tops at chest height. Side = the rig: profile rotation IS
  * the hinge plane, and the bell rides inside the rotating group. */
-function CurlViews({ hammer, repSeconds, paused }: { hammer: boolean; repSeconds: number; paused: boolean }) {
+function CurlViews({ hammer, repSeconds, paused, phase = null }: { hammer: boolean; repSeconds: number; paused: boolean; phase?: number | null }) {
   const dur = Math.min(5, Math.max(2.5, repSeconds));
   const motion = !usePrefersReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
-  useSmilClock(boxRef, "[data-curl-bell]", paused, motion, dur);
+  useSmilClock(boxRef, "[data-curl-bell]", paused, motion, dur, phase);
   const side = RIG_DEFS["curl-side"];
   const restL = "M85 86 L85 114";
   const restR = "M115 86 L115 114";
@@ -510,7 +518,7 @@ function CurlViews({ hammer, repSeconds, paused }: { hammer: boolean; repSeconds
           <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">Front</div>
         </div>
         <div className="flex min-w-0 flex-col items-center">
-          <RigFigure joints={side.joints} body={side.body} repSeconds={repSeconds} paused={paused} />
+          <RigFigure joints={side.joints} body={side.body} repSeconds={repSeconds} paused={paused} phase={phase} />
           <div className="mt-1 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-0.5 text-sm font-bold uppercase tracking-[0.25em] text-sky-300">Side</div>
         </div>
       </div>
@@ -530,11 +538,11 @@ const TRI_FRONT_TOP_L = "M85 30 L93 14";
 const TRI_FRONT_REST_R = "M115 30 L108 42";
 const TRI_FRONT_TOP_R = "M115 30 L107 14";
 
-function TricepsAnim({ repSeconds = 4, paused = false }: { repSeconds?: number; paused?: boolean }) {
+function TricepsAnim({ repSeconds = 4, paused = false, phase = null }: { repSeconds?: number; paused?: boolean; phase?: number | null }) {
   const dur = Math.min(5, Math.max(2.5, repSeconds));
   const motion = !usePrefersReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
-  useSmilClock(boxRef, "[data-tri-bell]", paused, motion, dur);
+  useSmilClock(boxRef, "[data-tri-bell]", paused, motion, dur, phase);
   const side = (
     <>
       <StandingSide />
@@ -625,17 +633,18 @@ function MiniFigure({ exerciseId }: { exerciseId: string }) {
         </g>
       )}
       {exerciseId === "one-arm-row" && (
-        <g stroke={INK} strokeWidth={2.5} fill="none" strokeLinecap="round">
-          <rect x={13} y={44} width={47} height={4} rx={1} fill={DIM} stroke="none" />
-          <path d="M18 48 V62 M55 48 V62 M8 64 H71" stroke={DIM} />
-          <rect x={23} y={24} width={28} height={8} rx={4} fill={INK} stroke="none" />
-          <circle cx={16} cy={25} r={4} />
-          <path d="M20 26 L24 28 L19 42 H15 M47 31 L44 42 H56 M49 32 L56 47 L64 62 H59" strokeLinejoin="round" />
-          <g className={`hf-mover ${rowStyles.miniArm}`}>
-            <line x1={29} y1={28} x2={30} y2={51} />
-            <circle cx={30} cy={53} r={4} fill={BLUE} stroke="none" />
+        <g stroke={INK} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round">
+          {/* Simple identifier: bench + horizontal body + one blue arm hanging a bell. */}
+          <rect x={12} y={44} width={46} height={4} rx={2} fill={DIM} stroke="none" />
+          <path d="M16 48 V60 M54 48 V60 M6 62 H70" stroke={DIM} strokeWidth={2.5} />
+          <circle cx={15} cy={33} r={5} />
+          <path d="M20 36 L52 40" strokeWidth={6} />
+          <path d="M52 40 L46 58 M46 58 H57" strokeWidth={3} />
+          <path d="M36 38 L31 45" strokeWidth={3} />
+          <g stroke={BLUE}>
+            <path d="M42 41 L47 54" />
+            <circle cx={48} cy={58} r={4.5} fill={BLUE} stroke="none" />
           </g>
-          <circle cx={29} cy={28} r={1.6} fill={BLUE} stroke="#0a1120" strokeWidth={0.6} />
         </g>
       )}
       {exerciseId === "shoulder-press" && (
@@ -753,6 +762,32 @@ function GenericAnim() {
     </>
   );
   return <Views aLabel="Front" bLabel="Side" a={front} b={side} />;
+}
+
+/** /lab preview: any hand-drawn figure frozen at `phase` (0..1; null plays).
+ *  SMIL seeks via useSmilClock; CSS bells/captions seek via --phase-delay. */
+export function LabScrub({ exerciseId, phase, repSeconds }: { exerciseId: string; phase: number | null; repSeconds: number }) {
+  const paused = phase !== null;
+  return (
+    <div
+      className={paused ? "hf-paused" : ""}
+      style={
+        {
+          "--rep-dur": `${Math.min(5, Math.max(2.5, repSeconds))}s`,
+          ...(paused ? { "--phase-delay": `${-phase! * Math.min(5, Math.max(2.5, repSeconds))}s` } : {}),
+        } as CSSProperties
+      }
+    >
+      {exerciseId === "bench-press" && <BenchPressAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "one-arm-row" && <RowAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "shoulder-press" && <ShoulderPressAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
+      {exerciseId === "biceps-curl" && <CurlViews hammer={false} repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "biceps-curl-hammer" && <CurlViews hammer={true} repSeconds={repSeconds} paused={paused} phase={phase} />}
+      {exerciseId === "triceps-extension" && <TricepsAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
+      <PhaseCaption />
+    </div>
+  );
 }
 
 /** Rep-phase caption: LIFT → HOLD → LOWER → BOTTOM, on the same tempo.

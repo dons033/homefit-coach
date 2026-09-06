@@ -3,12 +3,24 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { RigFigure } from "@/components/RigFigure";
-import { PhaseCaption } from "@/components/ExerciseAnimation";
+import { LabScrub, PhaseCaption } from "@/components/ExerciseAnimation";
 import { RIG_DEF_LIST, RIG_DEFS } from "@/lib/poses";
 
 /* Animation lab — a critique workbench, NOT part of the workout.
  * Big rig rendering, tempo control, phase scrub, joint readouts,
- * and A/B variant comparison. New poses get reviewed here first. */
+ * and A/B variant comparison. New poses get reviewed here first.
+ * Hand-drawn figures share the same tempo + scrub (SMIL seeks + a
+ * --phase-delay var for the CSS bells and captions). */
+
+const HAND_DEFS: { id: string; label: string }[] = [
+  { id: "bench-press", label: "Bench press" },
+  { id: "one-arm-row", label: "One-arm row" },
+  { id: "shoulder-press", label: "Shoulder press" },
+  { id: "lateral-raise", label: "Lateral raise" },
+  { id: "biceps-curl", label: "Biceps curl" },
+  { id: "biceps-curl-hammer", label: "Hammer curl" },
+  { id: "triceps-extension", label: "Triceps ext." },
+];
 
 function angleAt(def: (typeof RIG_DEF_LIST)[number], jointId: string, phase: number): number | null {
   const j = def.joints.find((x) => x.id === jointId);
@@ -23,6 +35,7 @@ function angleAt(def: (typeof RIG_DEF_LIST)[number], jointId: string, phase: num
 export default function LabPage() {
   const [defId, setDefId] = useState(RIG_DEF_LIST[0]?.id ?? "");
   const [compareId, setCompareId] = useState<string | null>(null);
+  const [handId, setHandId] = useState<string | null>(null);
   const [tempo, setTempo] = useState(4);
   const [scrub, setScrub] = useState<number | null>(null);
   const def = RIG_DEFS[defId];
@@ -144,6 +157,29 @@ export default function LabPage() {
             ))}
           </ul>
         </div>
+      </div>
+
+      <div className="mt-4 rounded-3xl border border-slate-800 bg-slate-900/40 p-4">
+        <div className="mb-2 text-lg font-bold uppercase tracking-wider text-slate-400">
+          Hand-drawn figures — same tempo + scrub
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {HAND_DEFS.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => setHandId(d.id === handId ? null : d.id)}
+              aria-pressed={handId === d.id}
+              className={`min-h-[48px] rounded-xl px-4 text-lg font-bold ${handId === d.id ? "bg-sky-500 text-slate-950" : "bg-slate-800 text-white"}`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+        {handId && (
+          <div className="mt-4">
+            <LabScrub exerciseId={handId} phase={scrub} repSeconds={tempo} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
-/* Row-only coordinates; the shared exercise styles and rep windows stay intact. */
+/* Row-only coordinates; the shared exercise styles and rep windows stay intact.
+ * --phase-delay comes from the /lab scrub wrapper (same var the global
+ * animation classes honor). */
 @keyframes sideBell {
   0%, 88%, 100% { transform: translate(0, 0); }
   38%, 52% { transform: translate(26px, -45px); }
@@ -7,19 +9,8 @@
   0%, 88%, 100% { transform: translate(0, 0); }
   38%, 52% { transform: translate(16px, -41px); }
 }
-.sideBell { animation: sideBell var(--rep-dur, 4s) ease-in-out infinite; }
-.backBell { animation: backBell var(--rep-dur, 4s) ease-in-out infinite; }
-
-/* The miniature retains a small CSS hinge motion with its shoulder pinned. */
-@keyframes miniArm {
-  0%, 88%, 100% { transform: rotate(0deg); }
-  38%, 52% { transform: rotate(-24deg); }
-}
-.miniArm {
-  transform-box: view-box;
-  transform-origin: 29px 28px;
-  animation: miniArm var(--rep-dur, 4s) ease-in-out infinite;
-}
+.sideBell { animation: sideBell var(--rep-dur, 4s) ease-in-out infinite; animation-delay: var(--phase-delay, 0s); }
+.backBell { animation: backBell var(--rep-dur, 4s) ease-in-out infinite; animation-delay: var(--phase-delay, 0s); }
 @media (prefers-reduced-motion: reduce) {
-  .sideBell, .backBell, .miniArm { animation: none; }
+  .sideBell, .backBell { animation: none; }
 }
