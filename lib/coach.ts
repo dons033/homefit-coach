@@ -1,3 +1,4 @@
+import { validActivity, type ActivityDetails } from "./training";
 import {
   upperBodyA,
   estimateMinutes,
@@ -27,6 +28,7 @@ export type Session = {
   workout?: Workout;
   completedSets?: number;
   completedExercises?: number;
+  activity?: ActivityDetails;
 };
 export type CoachState = { version: 1; purpose: Purpose; sessions: Session[] };
 export const STORAGE_KEY = "homefit.coach.v1";
@@ -84,6 +86,7 @@ export function validateCoach(value: unknown): value is CoachState {
       x.minutes <= 0
     )
       return false;
+    if (x.activity !== undefined && !validActivity(x.activity)) return false;
     if (x.kind === "external") return true;
     const w = x.workout;
     if (

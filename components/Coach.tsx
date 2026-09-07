@@ -24,6 +24,8 @@ import {
   type Purpose,
   type CoachProposal,
 } from "@/lib/coach";
+import { ActivityFields, TrainingCoverage } from "./TrainingCoverage";
+import { type ActivityDetails } from "@/lib/training";
 import { WorkoutSession } from "./WorkoutSession";
 
 import styles from "./Coach.module.css";
@@ -35,6 +37,8 @@ export default function Coach() {
   const [notice, setNotice] = useState("");
   const [playing, setPlaying] = useState<Session | null>(null);
   const [form, setForm] = useState<"guided" | "external" | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [activity, setActivity] = useState<ActivityDetails>({ program: "", focus: [] });
   const [title, setTitle] = useState("");
   const [minutes, setMinutes] = useState(30);
   const [notes, setNotes] = useState("");
@@ -74,11 +78,12 @@ export default function Coach() {
       if (event.key !== "Tab" || !dialog) return;
       const nodes = Array.from(
         dialog.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input, select, textarea, [tabindex="0"]',
+          'button:not(:disabled), input, select, textarea, summary, [tabindex="0"]',
         ),
       );
-      const first = nodes[0],
-        last = nodes[nodes.length - 1];
+      const visibleNodes = nodes.filter(node => node.getClientRects().length > 0);
+      const first = visibleNodes[0],
+        last = visibleNodes[visibleNodes.length - 1];
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last?.focus();
@@ -119,6 +124,8 @@ export default function Coach() {
   }
   function openForm(kind: "guided" | "external") {
     setForm(kind);
+    setEditing(null);
+    setActivity({ program: "", focus: [] });
     setTitle("");
     setNotes("");
     setEntries([]);
@@ -127,7 +134,7 @@ export default function Coach() {
   }
   function saveSession() {
     if (!title.trim() || (form === "guided" && !entries.length)) return;
-    const id = crypto.randomUUID();
+    const id = editing ?? crypto.randomUUID();
     const focus = current.purpose === "glp-1" ? "lean" : current.purpose;
     const workout =
       form === "guided"
@@ -164,8 +171,9 @@ export default function Coach() {
       notes: notes.trim(),
       completed: form === "external" && logged,
       workout,
+      ...(form === "external" ? { activity } : {}),
     };
-    commit({ ...current, sessions: [...current.sessions, session] });
+    commit({ ...current, sessions: editing ? current.sessions.map(s => s.id === editing ? { ...s, ...session, purpose: s.purpose } : s) : [...current.sessions, session] });
     setForm(null);
     setTab("plan");
   }
@@ -293,6 +301,7 @@ export default function Coach() {
               Used for new sessions. Set your own reps and pace below.
             </small>
           </section>
+          {tab === "plan" && <TrainingCoverage sessions={current.sessions} />}
           {(tab === "plan" || tab === "library") && (
             <section
               className={styles.session}
@@ -454,6 +463,14 @@ export default function Coach() {
                         </button>
                       </div>
                       <h3>{session.title}</h3>
+                      {session.kind === "external" && <>
+                        {session.activity?.program && <p>{session.activity.program}</p>}
+                        <button onClick={() => {
+                          openForm("external"); setEditing(session.id); setTitle(session.title);
+                          setMinutes(session.minutes); setNotes(session.notes); setLogged(session.completed);
+                          setActivity(session.activity ?? { program: "", focus: [] });
+                        }}>Edit activity details</button>
+                      </>}
                       <p className={styles.muted}>
                         {session.minutes} min · {PURPOSES[session.purpose]}
                         {session.workout
@@ -510,6 +527,8 @@ export default function Coach() {
                                   id,
                                   date: shiftDate(selected, 1),
                                   completed: false,
+                                  completedSets: undefined,
+                                  completedExercises: undefined,
                                 },
                               ],
                             });
@@ -743,6 +762,7 @@ export default function Coach() {
                       onChange={(e) => setMinutes(Number(e.target.value))}
                     />
                   </label>
+                  <ActivityFields value={activity} onChange={setActivity} />
                   <label className={styles.check}>
                     <input
                       type="checkbox"

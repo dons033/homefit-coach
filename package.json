@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx lib/__tests__/smoke.ts && tsx lib/__tests__/coach.ts && tsx lib/__tests__/lower-body.ts && tsx lib/__tests__/preparation.ts"
+    "test": "tsx lib/__tests__/smoke.ts && tsx lib/__tests__/coach.ts && tsx lib/__tests__/lower-body.ts && tsx lib/__tests__/preparation.ts && tsx lib/__tests__/training.ts"
   },
   "dependencies": {
     "@bryllim/workout-guide": "^1.0.0",
