@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 import { ExerciseAnimation } from "./ExerciseAnimation";
+import { LowerBodyAnimation, LOWER_ANIMATION_IDS } from "./LowerBodyAnimation";
 import { FormModal } from "./FormModal";
 import type { WorkoutController } from "@/hooks/useWorkoutController";
-import { setLabel, type Workout } from "@/lib/workout";
+import {
+  isPreparation,
+  setLabel,
+  setDescription,
+  repTarget,
+  type Workout,
+} from "@/lib/workout";
 
 export function formatClock(totalSeconds: number): string {
   const s = Math.max(0, Math.ceil(totalSeconds));
@@ -50,324 +57,339 @@ function BigButton({
   );
 }
 
-export function WorkoutPlayer({ workout, ctl }: { workout: Workout; ctl: WorkoutController }) {
+export function WorkoutPlayer({
+  workout,
+  ctl,
+}: {
+  workout: Workout;
+  ctl: WorkoutController;
+}) {
   const {
-    phase, paused, exercise, exerciseIndex, setNumber,
-    secondsRemaining, progress, nextStep, muted, voiceEnabled,
-    workoutStart, workoutEnd, completedSetsTotal, allSetsTotal,
-    customPacing,
+    phase,
+    paused,
+    exercise,
+    exerciseIndex,
+    setNumber,
+    secondsRemaining,
+    nextStep,
   } = ctl;
-
-  const side = setLabel(exercise, setNumber);
-  const totalExercises = workout.exercises.length;
   const [showForm, setShowForm] = useState(false);
-
-  const openForm = () => {
-    if (!paused) ctl.pause();
-    setShowForm(true);
-  };
-
-  // Estimated rep progress during work sets (pacing guidance, not a rep counter).
-  const workRep =
-    phase === "working"
-      ? (() => {
-          const repSecs = ctl.effSecs(exercise).work / exercise.targetReps;
-          const elapsed = ctl.totalDuration - secondsRemaining;
-          const done = Math.min(exercise.targetReps, Math.floor(elapsed / repSecs));
-          return { done, est: Math.min(exercise.targetReps, done + 1) };
-        })()
-      : null;
-
-  // Pause-sync: when paused mid-work, freeze the figure at the exact rep
-  // instant the timer stopped on — instead of wherever the CSS/SMIL clocks
-  // happened to be. Rest/ready pauses keep the old freeze-in-place behavior.
-  const repFreeze =
-    paused && phase === "working"
-      ? (() => {
-          const repSecs = ctl.effSecs(exercise).work / exercise.targetReps;
-          const elapsed = ctl.totalDuration - secondsRemaining;
-          const frac = elapsed / repSecs;
-          return frac - Math.floor(frac);
-        })()
-      : null;
-
-  if (phase === "complete") {
-    const totalMs = workoutStart ? (workoutEnd ?? Date.now()) - workoutStart : 0;
+  const center = phase === "resting" && nextStep ? nextStep.exercise : exercise;
+  const centerSet =
+    phase === "resting" && nextStep ? nextStep.setNumber : setNumber;
+  const warmup = center.kind === "warmup";
+  const cooldown = center.kind === "cooldown";
+  const preparation = isPreparation(center);
+  const timed = center.kind === "hold";
+  const side = setLabel(center, centerSet);
+  const urgent = phase === "working" && !preparation && secondsRemaining <= 10;
+  const statsFor = (index: number) =>
+    ctl.results.filter(
+      (r) => r.exerciseIndex === index && r.outcome === "completed",
+    ).length;
+  const totalMs = ctl.workoutStart
+    ? (ctl.workoutEnd ?? Date.now()) - ctl.workoutStart
+    : 0;
+  if (phase === "complete")
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center gap-8 p-8 text-center">
-        <div className="text-2xl font-semibold uppercase tracking-widest text-green-400">Workout Complete</div>
-        <h1 className="text-6xl font-extrabold">Nice work.</h1>
-        <div className="text-3xl text-slate-300">
-          Total time: <span className="font-bold text-white">{formatDuration(totalMs)}</span>
-        </div>
-        <div className="max-w-2xl rounded-2xl border border-green-900/60 bg-green-950/30 px-6 py-4 text-xl text-slate-200">
-          Protect the muscle you just trained — get <strong>25–40 g of protein</strong> in your next meal.
-        </div>
-        <div className="w-full rounded-3xl border border-slate-700 bg-slate-800/60 p-6 text-left">
-          <div className="mb-4 text-xl font-bold uppercase tracking-wider text-slate-400">Completed</div>
-          <ul className="space-y-2">
-            {workout.exercises.map((e, i) => (
-              <li key={e.id} className="flex items-center justify-between rounded-xl bg-slate-900/70 px-5 py-3 text-2xl">
-                <span className="font-semibold">{i + 1}. {e.name}</span>
-                <span className="text-slate-400">{e.sets} × {e.targetReps}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="flex gap-4">
-          <BigButton color="green" onClick={ctl.reset}>Restart</BigButton>
-          <BigButton color="slate" onClick={ctl.toggleMute}>{muted ? "Unmute" : "Mute"}</BigButton>
-        </div>
-      </div>
-    );
-  }
-
-  const phaseLabel =
-    phase === "ready" ? "GET READY" : phase === "working" ? (paused ? "PAUSED" : "WORK") : phase === "resting" ? (paused ? "PAUSED — REST" : "REST") : "";
-  const timerColor =
-    phase === "working" ? "text-green-400" : phase === "resting" ? "text-amber-300" : "text-sky-300";
-
-  // During rest, center shows rest timer but preview next; otherwise show current.
-  const centerExercise = phase === "resting" && nextStep ? nextStep.exercise : exercise;
-  const centerSet = phase === "resting" && nextStep ? nextStep.setNumber : setNumber;
-  const centerIndex = phase === "resting" && nextStep ? nextStep.exerciseIndex : exerciseIndex;
-
-  return (
-    <div className="flex min-h-screen w-full flex-col bg-[#0a1120]">
-      {/* Top bar */}
-      <header className="hf-safe-top hf-safe-x flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 py-3">
-        <div>
-          <div className="flex items-center gap-3 text-2xl font-extrabold">
-            HomeFit Coach
-            {customPacing && (
-              <span className="rounded-lg bg-sky-500/20 px-2 py-0.5 text-base font-bold text-sky-300">
-                Custom pace
-              </span>
-            )}
+      <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-7 px-5 py-10 text-center">
+        <h1 className="text-3xl font-extrabold text-green-300 sm:text-5xl">
+          {workout.name.toUpperCase()}{" "}
+          {ctl.requiredComplete ? "COMPLETE" : "ENDED"}
+        </h1>
+        <p className="text-xl text-slate-300">
+          {ctl.requiredComplete
+            ? "Nice work."
+            : "Only completed working sets are included below."}
+        </p>
+        <div className="grid grid-cols-3 gap-3 rounded-2xl bg-slate-800 p-5">
+          <div>
+            <strong className="text-2xl">{formatDuration(totalMs)}</strong>
+            <p>Elapsed time</p>
           </div>
-          <div className="text-lg text-slate-400">{workout.name} • Strength • {totalExercises} Exercises</div>
+          <div>
+            <strong className="text-2xl">{ctl.completedExercisesTotal}</strong>
+            <p>Exercises completed</p>
+          </div>
+          <div>
+            <strong className="text-2xl">{ctl.completedSetsTotal}</strong>
+            <p>Sets completed</p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={ctl.togglePause}
-            className="min-h-[56px] rounded-2xl bg-slate-700 px-6 text-xl font-bold hover:bg-slate-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
-            aria-label={paused ? "Resume" : "Pause"}
-          >
-            {paused ? "▶ Resume" : "⏸ Pause"}
-          </button>
-          <button
-            onClick={ctl.toggleMute}
-            className="min-h-[56px] min-w-[56px] rounded-2xl bg-slate-700 px-4 text-xl font-bold hover:bg-slate-600"
-            aria-label="Mute toggle"
-          >
-            {muted ? "🔇" : "🔔"}
-          </button>
-          <button
-            onClick={ctl.toggleVoice}
-            className="min-h-[56px] min-w-[56px] rounded-2xl bg-slate-700 px-4 text-xl font-bold hover:bg-slate-600"
-            aria-label="Voice cues toggle"
-            title="Spoken exercise cues"
-          >
-            {voiceEnabled ? "🗣" : "🚫"}
-          </button>
-          <button
-            onClick={ctl.endWorkout}
-            className="min-h-[56px] rounded-2xl bg-red-500 px-6 text-xl font-bold hover:bg-red-400"
-          >
+        <p className="text-slate-400">
+          Working sets only; warm-up and cool-down are separate.
+        </p>
+        <ul className="space-y-2 text-left">
+          {ctl.sequence.map((e, i) =>
+            isPreparation(e) ? null : (
+              <li
+                key={i}
+                className="flex justify-between gap-4 rounded-xl bg-slate-800/60 p-4"
+              >
+                <span>
+                  {e.name}
+                  {e.optional ? " (optional)" : ""}
+                </span>
+                <span>
+                  {statsFor(i)} / {e.sets} sets
+                  {e.optional && !statsFor(i) ? " · skipped" : ""}
+                </span>
+              </li>
+            ),
+          )}
+        </ul>
+        <div className="flex flex-wrap justify-center gap-3">
+          <BigButton color="green" onClick={ctl.reset}>
+            Restart
+          </BigButton>
+          <BigButton onClick={ctl.toggleMute}>
+            {ctl.muted ? "Unmute" : "Mute"}
+          </BigButton>
+        </div>
+      </main>
+    );
+  const label = paused
+    ? "PAUSED"
+    : phase === "resting"
+      ? "REST"
+      : phase === "ready"
+        ? "GET READY"
+        : cooldown
+          ? "COOL-DOWN"
+          : warmup
+            ? "WARM-UP"
+            : timed
+              ? "HOLD"
+              : "TIME LIMIT";
+  const repSeconds =
+    center.targetReps > 0 ? ctl.effSecs(center).work / center.targetReps : 4;
+  return (
+    <div className="min-h-screen bg-[#0a1120]">
+      <header className="hf-safe-top hf-safe-x flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 py-4">
+        <div>
+          <div className="text-2xl font-bold">HomeFit Coach</div>
+          <div className="text-slate-400">
+            {workout.name}
+            {ctl.customPacing ? " · Custom pace" : ""}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <BigButton onClick={ctl.toggleMute} ariaLabel="Mute toggle">
+            {ctl.muted ? "Unmute" : "Mute"}
+          </BigButton>
+          <BigButton onClick={ctl.toggleVoice} ariaLabel="Voice cues toggle">
+            Voice {ctl.voiceEnabled ? "on" : "off"}
+          </BigButton>
+          <BigButton color="red" onClick={ctl.endWorkout}>
             End Workout
-          </button>
+          </BigButton>
         </div>
       </header>
-
-      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)_250px] xl:grid-cols-[280px_minmax(0,1fr)_300px]">
-        {/* LEFT */}
-        <aside className="min-w-0 border-r border-slate-800 p-4 max-lg:hidden">
-          <div className="mb-2 text-lg font-bold text-slate-300">Workout Progress</div>
-          <div className="mb-1 h-3 overflow-hidden rounded-full bg-slate-700">
-            <div
-              className="h-full rounded-full bg-green-400 transition-all"
-              style={{ width: `${(completedSetsTotal / allSetsTotal) * 100}%` }}
-            />
-          </div>
-          <div className="mb-4 text-base text-slate-400">
-            {completedSetsTotal} / {allSetsTotal} sets • Ex {exerciseIndex + 1}/{totalExercises}
-          </div>
-          <ol className="space-y-1">
-            {workout.exercises.map((e, i) => {
-              const active = i === exerciseIndex;
-              const done = i < exerciseIndex;
-              return (
+      <div className="grid lg:grid-cols-[220px_minmax(0,1fr)_240px]">
+        <aside className="hidden border-r border-slate-800 p-5 lg:block">
+          <h2 className="text-lg font-bold">Workout progress</h2>
+          <p className="my-3 text-slate-400">
+            {ctl.completedSetsTotal} / {ctl.allSetsTotal} working sets
+          </p>
+          <progress
+            className="mb-4 h-3 w-full accent-green-400"
+            max={ctl.allSetsTotal}
+            value={ctl.completedSetsTotal}
+          />
+          {workout.warmup?.length ? (
+            <p className="mb-3 text-sm text-sky-300">
+              3-minute guided warm-up
+              {workout.cooldown?.length ? " · 3-minute cool-down" : ""}
+            </p>
+          ) : null}
+          <ol className="space-y-2">
+            {ctl.sequence.map((e, i) =>
+              isPreparation(e) ? null : (
                 <li
-                  key={e.id}
-                  className={`rounded-xl px-3 py-2.5 ${active ? "bg-blue-700" : done ? "bg-slate-800/80 opacity-70" : "bg-transparent"}`}
+                  key={i}
+                  className={`rounded-xl p-3 ${i === exerciseIndex ? "bg-blue-900" : "bg-slate-800/50"}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold ${active ? "bg-sky-400 text-slate-950" : "bg-slate-700"}`}>
-                      {done ? "✓" : i + 1}
-                    </span>
-                    <div>
-                      <div className="text-lg font-bold leading-tight">{e.name}</div>
-                      <div className="text-sm text-slate-300">{e.sets} × {e.targetReps} • {ctl.effSecs(e).rest}s rest</div>
-                    </div>
-                  </div>
+                  <p className="font-bold">{e.name}</p>
+                  <p className="text-sm text-slate-400">
+                    {e.optional ? "Optional · " : ""}
+                    {repTarget(e)}
+                  </p>
+                  <p className="text-sm">
+                    {statsFor(i)} / {e.sets} sets done
+                  </p>
                 </li>
-              );
-            })}
+              ),
+            )}
           </ol>
         </aside>
-
-        {/* CENTER */}
-        <main className="flex min-w-0 flex-col items-center px-4 py-4 text-center sm:px-6">
-          <div className="text-xl text-slate-400">Exercise {centerIndex + 1} of {totalExercises}</div>
-          <h1 className="text-5xl font-extrabold leading-tight">
-            {centerExercise.name}
-            {phase !== "resting" && side ? <span className="ml-3 rounded-xl bg-sky-500/20 px-3 py-1 align-middle text-3xl text-sky-300">{side}</span> : null}
-            {phase === "resting" && nextStep && setLabel(nextStep.exercise, nextStep.setNumber) ? (
-              <span className="ml-3 rounded-xl bg-sky-500/20 px-3 py-1 align-middle text-3xl text-sky-300">{setLabel(nextStep.exercise, nextStep.setNumber)}</span>
-            ) : null}
+        <main className="flex min-w-0 flex-col items-center px-4 py-5 text-center sm:px-6">
+          <p className="text-sm uppercase tracking-widest text-sky-300">
+            {phase === "resting"
+              ? "Coming up"
+              : cooldown
+                ? `Cool-down ${exerciseIndex - (workout.warmup?.length ?? 0) - workout.exercises.length + 1} of ${workout.cooldown?.length}`
+                : warmup
+                  ? `Warm-up ${exerciseIndex + 1} of ${workout.warmup?.length}`
+                  : center.optional
+                    ? "Optional finisher"
+                    : "Strength · controlled repetitions"}
+          </p>
+          <h1 className="mt-2 text-3xl font-extrabold sm:text-5xl">
+            {center.name}
           </h1>
-          <div className="mt-1 text-2xl text-slate-300">
-            {centerExercise.sets} sets × {centerExercise.targetReps} reps &nbsp;|&nbsp; Rest: {ctl.effSecs(centerExercise).rest}s
-          </div>
-
-          <div className="mt-2 w-full max-w-4xl rounded-2xl border border-slate-800 bg-slate-900/40 p-3">
-            <ExerciseAnimation
-              exerciseId={centerExercise.animationId}
-              repSeconds={ctl.effSecs(centerExercise).work / centerExercise.targetReps}
-              paused={paused}
-              phase={repFreeze}
-            />
-            <div className="mt-1 flex justify-center">
-              <button
-                onClick={openForm}
-                className="min-h-[56px] rounded-xl px-6 text-xl font-bold text-sky-300 hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
-              >
-                📷 Form guide
-              </button>
+          {side && (
+            <div
+              aria-live="polite"
+              className="my-3 w-full rounded-xl bg-sky-400 px-4 py-3 text-4xl font-extrabold text-slate-950"
+            >
+              {side}
             </div>
-          </div>
-          {showForm && <FormModal exercise={centerExercise} onClose={() => setShowForm(false)} />}
-
-          {/* cues */}
-          <ol className="mt-2 w-full max-w-3xl space-y-1 text-left">
-            {(phase === "resting" && nextStep ? nextStep.exercise.cues : exercise.cues).slice(0, 4).map((c, i) => (
-              <li key={i} className="flex items-start gap-3 text-xl text-slate-200">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-base font-bold">{i + 1}</span>
-                <span>{c}</span>
-              </li>
-            ))}
-          </ol>
-
-          {/* Timer card — tap to pause/resume (big touch target) */}
+          )}
+          <p className="mt-3 text-xl text-slate-300">
+            {preparation
+              ? `${center.workSeconds} seconds · easy pace · no rest between movements`
+              : timed
+                ? `${center.workSeconds}-second static hold · no rep target`
+                : `${setDescription(center, centerSet)} · Target: ${repTarget(center)}`}
+          </p>
+          {!preparation && !timed && (
+            <p className="mt-4 max-w-xl text-lg text-green-200">
+              Complete {repTarget(center)} with control, then press DONE. The
+              timer is a maximum, not a requirement to keep moving.
+            </p>
+          )}
           <button
             onClick={ctl.togglePause}
             aria-label={paused ? "Resume workout" : "Pause workout"}
-            className="mt-3 w-full max-w-3xl cursor-pointer rounded-3xl border border-slate-700 bg-slate-800/70 p-5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
+            className={`mt-4 w-full rounded-3xl border-2 p-5 ${urgent ? "border-amber-300 bg-amber-400/15" : "border-slate-700 bg-slate-900"}`}
           >
-            <div className="text-2xl font-bold uppercase tracking-widest text-slate-300">
-              {phaseLabel} — Set {phase === "resting" && nextStep ? nextStep.setNumber : setNumber} of {centerExercise.sets}
-            </div>
-            <div className={`font-extrabold tabular-nums leading-none ${timerColor} text-[clamp(5rem,16vw,11rem)]`} aria-live="assertive">
+            <span className="text-xl font-bold tracking-widest">{label}</span>
+            <span
+              role="timer"
+              aria-label={`${label}: ${secondsRemaining} seconds`}
+              className={`block text-7xl font-extrabold tabular-nums sm:text-8xl ${urgent ? "text-amber-300" : phase === "resting" ? "text-amber-200" : "text-green-300"}`}
+            >
               {formatClock(secondsRemaining)}
-            </div>
-            <div className="mx-auto mt-2 h-4 max-w-xl overflow-hidden rounded-full bg-slate-700">
-              <div className="h-full rounded-full bg-green-400 transition-all" style={{ width: `${progress * 100}%` }} />
-            </div>
-            {workRep && (
-              <div className="mt-2 flex items-center justify-center gap-1.5" aria-hidden="true">
-                {Array.from({ length: exercise.targetReps }, (_, i) => (
-                  <span
-                    key={i}
-                    className={`h-3 w-3 rounded-full ${i < workRep.done ? "bg-green-400" : "bg-slate-700"}`}
-                  />
-                ))}
-              </div>
+            </span>
+            {urgent && (
+              <span className="block text-lg font-bold text-amber-200">
+                FINAL 10 SECONDS
+              </span>
             )}
-            <div className="mt-4 flex items-center justify-center gap-6">
-              <div className="text-left">
-                <div className="text-base uppercase tracking-wider text-slate-400">Target reps</div>
-                <div className="text-6xl font-extrabold">{centerExercise.targetReps}</div>
-              </div>
-              {phase === "working" && workRep && (
-                <div className="text-left">
-                  <div className="text-base uppercase tracking-wider text-slate-400">Pace — rep</div>
-                  <div className="text-6xl font-extrabold tabular-nums text-sky-300">~{workRep.est}</div>
-                </div>
-              )}
-              {paused
-                ? <div className="rounded-xl bg-amber-400/15 px-4 py-2 text-2xl font-bold text-amber-300">Paused — tap to resume</div>
-                : <div className="rounded-xl bg-slate-700/60 px-4 py-2 text-xl font-bold text-slate-300">Tap timer to pause</div>}
-            </div>
+            <span className="mt-2 block text-sm text-slate-400">
+              Tap timer to {paused ? "resume" : "pause"}
+            </span>
           </button>
-
-          {/* Controls */}
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 pb-2">
-            <BigButton color={paused ? "green" : "amber"} onClick={ctl.togglePause} ariaLabel={paused ? "Resume" : "Pause"}>
-              {paused ? "▶ Resume" : "⏸ Pause"}
+          <div className="my-4 flex flex-wrap justify-center gap-3">
+            <BigButton
+              color={paused ? "green" : "amber"}
+              onClick={ctl.togglePause}
+            >
+              {paused ? "Resume" : "Pause"}
             </BigButton>
-            {phase === "working" && <BigButton color="green" onClick={ctl.finishSetEarly}>Finish Set ✓</BigButton>}
-            {phase === "resting" && <BigButton color="amber" onClick={() => ctl.extendRest(15)}>+15s rest</BigButton>}
-            <BigButton color="slate" onClick={ctl.previous} ariaLabel="Previous set">⏮ Prev</BigButton>
-            <BigButton color="blue" onClick={ctl.skip}>Skip ⏭</BigButton>
+            {phase === "working" && !preparation && !timed && !paused && (
+              <BigButton color="green" onClick={ctl.finishSetEarly}>
+                DONE ✓
+              </BigButton>
+            )}
+            {phase === "resting" && (
+              <BigButton color="amber" onClick={() => ctl.extendRest(15)}>
+                +15s rest
+              </BigButton>
+            )}
+            {preparation && (
+              <BigButton color="slate" onClick={ctl.skipPreparation}>
+                Skip {cooldown ? "cool-down" : "warm-up"}
+              </BigButton>
+            )}
+            {center.optional ? (
+              <BigButton color="blue" onClick={ctl.skipFinisher}>
+                SKIP FINISHER
+              </BigButton>
+            ) : (
+              <BigButton color="blue" onClick={ctl.skip}>
+                {phase === "ready"
+                  ? "Begin set"
+                  : phase === "resting"
+                    ? "Skip rest"
+                    : cooldown
+                      ? "Skip cool-down move"
+                      : warmup
+                        ? "Skip warm-up move"
+                        : "Skip set"}
+              </BigButton>
+            )}
+            <BigButton onClick={ctl.previous}>Previous set</BigButton>
           </div>
-          <div className="pb-6 text-base text-slate-500">Keys: Space = pause • F = finish • N = skip • P = prev • M = mute • V = voice</div>
+          <div className="mt-4 w-full rounded-2xl border border-slate-800 bg-slate-900/50 p-3">
+            {LOWER_ANIMATION_IDS.has(center.animationId) ? (
+              <LowerBodyAnimation
+                key={center.animationId + side}
+                exerciseId={center.animationId}
+                repSeconds={repSeconds}
+                paused={paused}
+                sideLabel={side}
+              />
+            ) : (
+              <ExerciseAnimation
+                exerciseId={center.animationId}
+                repSeconds={repSeconds}
+                paused={paused}
+              />
+            )}
+            <button
+              onClick={() => {
+                ctl.pause();
+                setShowForm(true);
+              }}
+              className="min-h-[48px] rounded-xl px-6 py-2 text-lg font-bold text-sky-300 hover:bg-slate-800"
+            >
+              Form guide
+            </button>
+          </div>
+          {showForm && (
+            <FormModal exercise={center} onClose={() => setShowForm(false)} />
+          )}
+          <ul className="mb-6 w-full space-y-2 text-left text-lg">
+            {center.cues.map((c) => (
+              <li key={c} className="rounded-lg bg-slate-800/50 px-4 py-2">
+                {c}
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm text-slate-500">
+            Space: pause · F: done · N: skip · P: previous · M: mute · V: voice
+          </p>
         </main>
-
-        {/* RIGHT */}
-        <aside className="min-w-0 border-l border-slate-800 p-4 max-lg:hidden">
-          <div className="mb-2 text-xl font-bold">Next Up</div>
-          {nextStep && phase !== "resting" ? (
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-3">
-              <ExerciseAnimation exerciseId={nextStep.exercise.animationId} variant="mini" />
-              <div className="mt-1 text-xl font-bold">{nextStep.exercise.name}{setLabel(nextStep.exercise, nextStep.setNumber) ? ` — ${setLabel(nextStep.exercise, nextStep.setNumber)}` : ""}</div>
-              <div className="text-base text-slate-400">Set {nextStep.setNumber} of {nextStep.exercise.sets} • {nextStep.exercise.targetReps} reps • {ctl.effSecs(nextStep.exercise).rest}s rest</div>
-            </div>
-          ) : phase === "resting" ? (
-            <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-3 text-xl font-bold text-amber-200">
-              Rest — get ready. Next starts when the timer hits zero.
+        <aside className="border-l border-slate-800 p-5">
+          <h2 className="text-xl font-bold">Next up</h2>
+          {nextStep ? (
+            <div className="mt-3 rounded-xl bg-slate-800/50 p-4">
+              <ExerciseAnimation
+                exerciseId={nextStep.exercise.animationId}
+                variant="mini"
+              />
+              <p className="mt-3 text-xl font-bold">{nextStep.exercise.name}</p>
+              {!isPreparation(nextStep.exercise) && (
+                <p className="mt-2 text-sky-300">
+                  {setDescription(nextStep.exercise, nextStep.setNumber)}
+                </p>
+              )}
+              <p className="mt-2 text-slate-300">
+                {repTarget(nextStep.exercise)}
+              </p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-3 text-xl text-slate-300">Last set — finish strong.</div>
+            <p className="mt-3 text-slate-300">
+              Last set. Finish with control.
+            </p>
           )}
-          <div className="mb-2 mt-4 text-xl font-bold">After That</div>
-          <div className="space-y-2">
-            {workout.exercises.slice(exerciseIndex + (phase === "resting" && nextStep && nextStep.exerciseIndex > exerciseIndex ? 1 : 0) + 1, exerciseIndex + 4).map((e) => (
-              <div key={e.id} className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-2">
-                <ExerciseAnimation exerciseId={e.animationId} variant="mini" />
-                <div>
-                  <div className="text-lg font-bold leading-tight">{e.shortName}</div>
-                  <div className="text-sm text-slate-400">{e.sets} × {e.targetReps} • {ctl.effSecs(e).rest}s</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-3 text-left text-base text-slate-300">
-            <div className="mb-1 font-bold text-slate-200">Tips</div>
-            <ul className="list-disc space-y-0.5 pl-5">
-              <li>Keep your core engaged.</li>
-              <li>Control the weight.</li>
-              <li>Full range of motion.</li>
-              <li>Breathe: exhale up, inhale down.</li>
-            </ul>
-          </div>
+          <p className="mt-6 text-slate-400">
+            {workout.purpose ??
+              "Keep your core engaged and control the weight."}
+          </p>
         </aside>
       </div>
-
-      {/* Bottom strip */}
-      <footer className="hf-safe-bottom hf-safe-x flex flex-wrap items-center justify-around gap-4 border-t border-slate-800 bg-slate-900/60 py-2">
-        <div className="flex items-center gap-4">
-          <div>
-            <div className="text-sm uppercase tracking-wider text-sky-300">Up next</div>
-            <div className="text-2xl font-bold">{nextStep ? nextStep.exercise.name : "Done"}</div>
-          </div>
-          {nextStep && <ExerciseAnimation exerciseId={nextStep.exercise.animationId} variant="mini" />}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm uppercase tracking-wider text-sky-300">Get ready</span>
-          <span className="text-xl text-slate-300">Next in</span>
-          <span className="text-5xl font-extrabold tabular-nums text-amber-300">{formatClock(secondsRemaining)}</span>
-        </div>
-      </footer>
     </div>
   );
 }

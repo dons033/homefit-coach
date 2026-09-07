@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { PreparationAnimation } from "./PreparationAnimation";
 import { Dumbbell, Plate, DumbbellV } from "./bells";
 import { RigFigure } from "./RigFigure";
 import { RIG_DEFS } from "@/lib/poses";
 import { GsapBenchAnim } from "./GsapBench";
+import { LowerBodyAnimation, LOWER_ANIMATION_IDS } from "./LowerBodyAnimation";
 import rowStyles from "./RowAnimation.module.css";
 
 function usePrefersReducedMotion(): boolean {
@@ -826,6 +828,8 @@ export function ExerciseAnimation({
   paused?: boolean;
   phase?: number | null;
 }) {
+  if (LOWER_ANIMATION_IDS.has(exerciseId)) return <LowerBodyAnimation exerciseId={exerciseId} repSeconds={repSeconds} paused={paused} phase={phase} mini={variant === "mini"} />;
+  if (exerciseId.startsWith("prep-")) return <PreparationAnimation id={exerciseId} paused={paused} mini={variant === "mini"}/>;
   const durClamped = Math.min(5, Math.max(2.5, repSeconds));
   if (variant === "mini") {
     if (!KNOWN_IDS.has(exerciseId)) {

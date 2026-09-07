@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HomeFit Coach — Upper Body A",
-  description: "Tablet-friendly follow-along workout player.",
+  title: "HomeFit Coach — Your week, your pace",
+  description: "Flexible workout planning, reusable exercises, and everyday movement.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

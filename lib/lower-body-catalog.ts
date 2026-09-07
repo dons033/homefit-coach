@@ -1,0 +1,237 @@
+import type { ExerciseInfo } from "./exercise-catalog";
+
+function movement(
+  id: string,
+  name: string,
+  shortName: string,
+  muscles: string[],
+  equipment: string[],
+  cues: string[],
+  steps: string[],
+  avoid: string[],
+  animationId = id,
+): ExerciseInfo {
+  return {
+    id,
+    name,
+    shortName,
+    muscles,
+    equipment,
+    defaultVariant: "standard",
+    variants: {
+      standard: {
+        id: "standard",
+        label: "Standard",
+        animationId,
+        cues,
+        dbSteps: steps,
+        avoid,
+      },
+    },
+  };
+}
+
+export const LOWER_BODY_CATALOG: Record<string, ExerciseInfo> = {
+  "goblet-squat": movement(
+    "goblet-squat",
+    "Goblet Squat",
+    "Goblet Squat",
+    ["quads", "glutes"],
+    ["dumbbells"],
+    [
+      "Chest tall.",
+      "Knees track over toes.",
+      "Keep heels down.",
+      "Sit between your hips rather than folding forward.",
+      "Stand by pushing the floor away.",
+    ],
+    [
+      "Stand about shoulder width, toes slightly outward, one dumbbell held vertically against your upper chest. Keep your spine neutral and the entire foot planted.",
+      "Bend hips and knees together. Lower under control toward parallel, or as deep as comfortable while maintaining position.",
+      "Keep knees tracking with toes. Drive through the whole foot to stand tall without leaning backward.",
+    ],
+    [
+      "Knees collapsing inward.",
+      "Heels lifting.",
+      "Excessive forward torso collapse.",
+      "Bouncing out of the bottom.",
+    ],
+  ),
+  "romanian-deadlift": movement(
+    "romanian-deadlift",
+    "Dumbbell Romanian Deadlift",
+    "Romanian Deadlift",
+    ["hamstrings", "glutes"],
+    ["dumbbells"],
+    [
+      "Hips go BACK.",
+      "Keep dumbbells close to your legs.",
+      "Soft knees, not a squat.",
+      "Keep your back neutral.",
+      "Squeeze glutes to stand.",
+    ],
+    [
+      "Stand hip width, dumbbells in front of thighs, knees slightly bent. Brace your torso with shoulders set and spine neutral.",
+      "Push hips backward, keeping approximately the same modest knee bend. Lower dumbbells close to your legs until you feel a hamstring stretch without losing spinal position.",
+      "Drive hips forward to stand tall, glutes engaged.",
+    ],
+    [
+      "Squatting downward.",
+      "Rounding the lower back.",
+      "Reaching dumbbells toward the floor.",
+      "Leaning backward at the top.",
+    ],
+  ),
+  "bulgarian-split-squat": movement(
+    "bulgarian-split-squat",
+    "Bulgarian Split Squat",
+    "Split Squat",
+    ["quads", "glutes", "hip stabilizers"],
+    ["dumbbells", "bench/chair"],
+    [
+      "Front foot stays planted.",
+      "Lower straight down.",
+      "Front leg does the work.",
+      "Keep knee tracking with toes.",
+      "Move under control.",
+    ],
+    [
+      "Stand roughly one stride in front of a bench or sturdy chair. Place the rear foot on it; keep the front foot fully planted and dumbbells beside your body.",
+      "With torso upright or slightly inclined, lower through the front leg as the rear knee moves toward the floor. Descend only as far as comfortable with balance.",
+      "Push through the front foot to return. The front leg performs most of the work. The displayed leg is your FRONT working leg.",
+    ],
+    [
+      "Pushing primarily with the rear leg.",
+      "Front heel lifting.",
+      "Knee collapsing inward.",
+      "Excessively narrow stance.",
+    ],
+  ),
+  "hip-thrust": {
+    ...movement(
+      "hip-thrust",
+      "Dumbbell Hip Thrust",
+      "Hip Thrust",
+      ["glutes", "hamstrings"],
+      ["dumbbells", "bench", "mat"],
+      [],
+      [],
+      [],
+    ),
+    defaultVariant: "bench",
+    variants: {
+      bench: {
+        id: "bench",
+        label: "Bench hip thrust",
+        animationId: "hip-thrust",
+        equipment: ["dumbbells", "bench", "mat"],
+        cues: [
+          "Drive through your feet.",
+          "Lift with the glutes.",
+          "Brief squeeze at the top.",
+          "Keep ribs down.",
+          "Lower under control.",
+        ],
+        dbSteps: [
+          "Support your upper back against a stable bench, knees bent and feet planted hip width. Hold the dumbbell securely across your hips and gently brace your abdomen.",
+          "Drive through feet and extend hips until torso and thighs form approximately a straight line. Briefly squeeze your glutes.",
+          "Lower hips under control without bouncing.",
+        ],
+        avoid: [
+          "Hyperextending the lower back.",
+          "Driving primarily through toes.",
+          "Throwing hips upward using momentum.",
+        ],
+      },
+      floor: {
+        id: "floor",
+        label: "Floor glute bridge",
+        animationId: "glute-bridge",
+        equipment: ["dumbbells", "mat"],
+        notes: "Use when a bench setup is inconvenient.",
+        cues: [
+          "Drive through your feet.",
+          "Lift with the glutes.",
+          "Brief squeeze at the top.",
+          "Keep ribs down.",
+          "Lower under control.",
+        ],
+        dbSteps: [
+          "Lie on your back on a mat with knees bent and feet planted hip width. Secure a dumbbell across your hips and gently brace your abdomen.",
+          "Drive through your feet until torso and thighs form approximately a straight line, squeezing glutes briefly at the top.",
+          "Lower hips under control. Repeat without bouncing.",
+        ],
+        avoid: [
+          "Hyperextending the lower back.",
+          "Driving primarily through toes.",
+          "Throwing hips upward using momentum.",
+        ],
+      },
+    },
+  },
+  "reverse-lunge": movement(
+    "reverse-lunge",
+    "Dumbbell Reverse Lunge",
+    "Reverse Lunge",
+    ["quads", "glutes", "hip stabilizers"],
+    ["dumbbells"],
+    [
+      "Step back, not forward.",
+      "Keep front foot planted.",
+      "Control the descent.",
+      "Push through the front leg.",
+      "Return fully to standing.",
+    ],
+    [
+      "Stand tall with feet hip width, holding dumbbells beside your body.",
+      "Step one foot backward and lower the rear knee toward the floor while the front foot stays planted.",
+      "Push through the front leg to return fully to standing. Alternate legs: 8 per side, 16 total repetitions per set.",
+    ],
+    [
+      "Slamming the rear knee toward the floor.",
+      "Front knee collapsing inward.",
+      "Using momentum to return.",
+      "An excessively short backward step.",
+    ],
+  ),
+  "calf-raise": movement(
+    "calf-raise",
+    "Standing Calf Raise",
+    "Calf Raise",
+    ["calves"],
+    ["dumbbells"],
+    [
+      "Rise straight upward.",
+      "Pause at the top.",
+      "Lower slowly.",
+      "Keep ankles from rolling outward.",
+    ],
+    [
+      "Stand tall, feet hip width, dumbbells beside your body. Use a wall or chair lightly for balance if needed.",
+      "Press through the balls of your feet to raise heels as high as comfortable. Pause briefly.",
+      "Lower heels slowly to the floor without bouncing.",
+    ],
+    ["Bouncing.", "Partial rapid repetitions.", "Rocking your torso forward."],
+  ),
+  "wall-sit": {
+    ...movement(
+      "wall-sit",
+      "Wall Sit",
+      "Wall Sit",
+      ["quads", "glutes"],
+      ["wall"],
+      [
+        "Back against wall.",
+        "Keep feet planted.",
+        "Breathe normally.",
+        "Hold.",
+      ],
+      [
+        "Place your back flat against a wall, feet forward and fully planted.",
+        "Bend knees to approximately 90 degrees, or stay higher if needed. Hold for up to 45 seconds.",
+      ],
+      [],
+    ),
+    timed: true,
+  },
+};

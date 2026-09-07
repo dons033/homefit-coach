@@ -9,7 +9,13 @@ import type { Exercise } from "@/lib/workout";
  * Opening it pauses the workout — a running clock while you study
  * form is hostile. Closing leaves you paused; Resume is one tap away.
  */
-export function FormModal({ exercise, onClose }: { exercise: Exercise; onClose: () => void }) {
+export function FormModal({
+  exercise,
+  onClose,
+}: {
+  exercise: Exercise;
+  onClose: () => void;
+}) {
   const info = getExerciseInfo(exercise.id);
   const variant =
     info.variants[exercise.variantId] ?? info.variants[info.defaultVariant];
@@ -38,7 +44,9 @@ export function FormModal({ exercise, onClose }: { exercise: Exercise; onClose: 
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-sm font-bold uppercase tracking-widest text-sky-300">Form guide</div>
+            <div className="text-sm font-bold uppercase tracking-widest text-sky-300">
+              Form guide
+            </div>
             <h2 className="text-3xl font-extrabold">{exercise.name}</h2>
           </div>
           <button
@@ -79,7 +87,9 @@ export function FormModal({ exercise, onClose }: { exercise: Exercise; onClose: 
 
         {steps.length > 0 && (
           <div className="mt-4">
-            <div className="mb-1 text-lg font-bold uppercase tracking-wider text-slate-400">Reference</div>
+            <div className="mb-1 text-lg font-bold uppercase tracking-wider text-slate-400">
+              Reference
+            </div>
             <ol className="list-decimal space-y-1 pl-6 text-xl text-slate-200">
               {steps.map((s, i) => (
                 <li key={i}>{s}</li>
@@ -89,7 +99,9 @@ export function FormModal({ exercise, onClose }: { exercise: Exercise; onClose: 
         )}
 
         <div className="mt-4">
-          <div className="mb-1 text-lg font-bold uppercase tracking-wider text-slate-400">Your cues</div>
+          <div className="mb-1 text-lg font-bold uppercase tracking-wider text-slate-400">
+            Your cues
+          </div>
           <ul className="list-disc space-y-1 pl-6 text-xl text-slate-200">
             {exercise.cues.map((c, i) => (
               <li key={i}>{c}</li>
@@ -97,8 +109,19 @@ export function FormModal({ exercise, onClose }: { exercise: Exercise; onClose: 
           </ul>
         </div>
 
+        {variant?.avoid && variant.avoid.length > 0 && (
+          <section className="mt-4">
+            <h3 className="text-lg font-bold text-amber-300">Avoid</h3>
+            <ul className="list-disc space-y-1 pl-6 text-xl">
+              {variant.avoid.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <p className="mt-4 text-base text-slate-500">
-          Photos: public-domain reference (free-exercise-db). Workout stays paused — tap Resume when ready.
+          {images ? "Photos: public-domain reference (free-exercise-db). " : ""}
+          Workout stays paused — tap Resume when ready.
         </p>
       </div>
     </div>

@@ -1,5 +1,4 @@
 "use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sounds, unlockAudio, setMuted as setAudioMuted } from "@/lib/audio";
 import {
@@ -11,339 +10,371 @@ import {
   speak,
 } from "@/lib/voice";
 import { perExerciseOverrideCount, type PaceSettings } from "@/lib/pacing";
-import type { Exercise, Workout } from "@/lib/workout";
+import {
+  isPreparation,
+  repTarget,
+  setDescription,
+  type Exercise,
+  type Workout,
+} from "@/lib/workout";
+import {
+  workoutSequence,
+  followingSet,
+  recordSet,
+  completionStats,
+  type SetResult,
+} from "@/lib/workout-progress";
 
 export type Phase = "idle" | "ready" | "working" | "resting" | "complete";
 export const READY_SECONDS = 5;
-
 export type NextStep = {
   exercise: Exercise;
   exerciseIndex: number;
   setNumber: number;
 } | null;
+type ControllerOptions = { fast?: boolean; pacing?: PaceSettings };
 
-type ControllerOptions = {
-  /** Override durations for fast testing (?fast=1). */
-  fast?: boolean;
-  /** User-adjustable pacing from the home screen. */
-  pacing?: PaceSettings;
-};
-
-/**
- * Single owner of workout progression + timing.
- * Uses timestamps (phaseEndsAt) so remaining time is computed from Date.now(),
- * not from decrementing a counter — resilient to render stalls.
- */
-export function useWorkoutController(workout: Workout, opts: ControllerOptions = {}) {
-  const fast = !!opts.fast;
+export function useWorkoutController(
+  workout: Workout,
+  opts: ControllerOptions = {},
+) {
+  const sequence = useMemo(() => workoutSequence(workout), [workout]);
   const [phase, setPhase] = useState<Phase>("idle");
   const [exerciseIndex, setExerciseIndex] = useState(0);
-  const [setNumber, setSetNumber] = useState(1); // 1-indexed within exercise
+  const [setNumber, setSetNumber] = useState(1);
   const [secondsRemaining, setSecondsRemaining] = useState(0);
   const [paused, setPaused] = useState(false);
   const [muted, setMutedState] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(loadVoiceOn);
   const [workoutStart, setWorkoutStart] = useState<number | null>(null);
   const [workoutEnd, setWorkoutEnd] = useState<number | null>(null);
-
-  useEffect(() => {
-    initVoice(loadVoiceOn());
-  }, []);
-
-  const endsAtRef = useRef<number>(0);
-  const durationRef = useRef<number>(0);
-  const pausedRemainingRef = useRef<number>(0);
-  const wakeLockRef = useRef<{ release: () => void } | null>(null);
+  const [results, setResults] = useState<SetResult[]>([]);
+  const resultsRef = useRef<SetResult[]>([]);
   const stateRef = useRef({ phase, exerciseIndex, setNumber, paused });
   stateRef.current = { phase, exerciseIndex, setNumber, paused };
-  const firedRef = useRef<Set<number>>(new Set());
-
-  // ---- screen wake lock: keep the iPad awake mid-workout ----
+  const endsAtRef = useRef(0),
+    durationRef = useRef(0),
+    pausedRemainingRef = useRef(0);
+  const firedRef = useRef(new Set<number>());
+  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+  const mounted = useRef(true);
   const releaseWakeLock = useCallback(() => {
-    try {
-      wakeLockRef.current?.release();
-    } catch {
-      /* already released */
-    }
+    void wakeLockRef.current?.release().catch(() => {});
     wakeLockRef.current = null;
   }, []);
-
   const requestWakeLock = useCallback(async () => {
     try {
-      const nav = navigator as Navigator & {
-        wakeLock?: { request: (type: string) => Promise<{ release: () => void }> };
-      };
-      if (nav.wakeLock) {
-        wakeLockRef.current = await nav.wakeLock.request("screen");
+      const lock = await navigator.wakeLock?.request("screen");
+      if (!lock) return;
+      if (
+        !mounted.current ||
+        ["idle", "complete"].includes(stateRef.current.phase)
+      ) {
+        await lock.release();
+        return;
       }
+      wakeLockRef.current = lock;
+      lock.addEventListener("release", () => {
+        if (wakeLockRef.current === lock) wakeLockRef.current = null;
+      });
     } catch {
-      /* unsupported browser — screen may sleep, timer still runs */
+      /* Browser may not support or grant a screen wake lock. */
     }
   }, []);
-
-  // Re-acquire if the OS releases it while the workout is running.
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        const s = stateRef.current;
-        if (s.phase !== "idle" && s.phase !== "complete" && !wakeLockRef.current) {
-          void requestWakeLock();
-        }
-      }
+    mounted.current = true;
+    initVoice(loadVoiceOn());
+    return () => {
+      mounted.current = false;
+      cancelVoice();
+      releaseWakeLock();
     };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [releaseWakeLock]);
+  useEffect(() => {
+    const visible = () => {
+      if (
+        document.visibilityState === "visible" &&
+        !["idle", "complete"].includes(stateRef.current.phase) &&
+        !wakeLockRef.current
+      )
+        void requestWakeLock();
+    };
+    document.addEventListener("visibilitychange", visible);
+    return () => document.removeEventListener("visibilitychange", visible);
   }, [requestWakeLock]);
-
-  const durations = useMemo(() => {
-    if (fast) return { ready: 3, work: 8, rest: 6 };
-    if (opts.pacing?.customEnabled) {
-      return {
-        ready: opts.pacing.readySeconds,
-        work: opts.pacing.workSeconds,
-        rest: opts.pacing.restSeconds,
-      };
-    }
-    return null;
-  }, [fast, opts.pacing]);
-  const customPacing =
-    (!!opts.pacing?.customEnabled ||
-      perExerciseOverrideCount(opts.pacing ?? { exercises: {} } as PaceSettings) > 0) &&
-    !fast;
-
-  const pacingFor = useCallback(
-    (ex: Exercise) => opts.pacing?.exercises?.[ex.id],
-    [opts.pacing]
-  );
-
-  const readySecs = durations?.ready ?? READY_SECONDS;
-  const workSecsFor = useCallback(
-    (ex: Exercise) =>
-      durations?.work ?? pacingFor(ex)?.workSeconds ?? ex.workSeconds,
-    [durations, pacingFor]
-  );
-  const restSecsFor = useCallback(
-    (ex: Exercise) =>
-      durations?.rest ?? pacingFor(ex)?.restSeconds ?? ex.restSeconds,
-    [durations, pacingFor]
-  );
-
-  /** Effective work/rest for any exercise, honoring all pacing layers. */
+  const readySecs = opts.fast
+    ? 3
+    : opts.pacing?.customEnabled
+      ? opts.pacing.readySeconds
+      : READY_SECONDS;
   const effSecs = useCallback(
-    (ex: Exercise) => ({ work: workSecsFor(ex), rest: restSecsFor(ex) }),
-    [workSecsFor, restSecsFor]
+    (ex: Exercise) => {
+      if (isPreparation(ex))
+        return { work: opts.fast ? 2 : ex.workSeconds, rest: 0 };
+      if (ex.kind === "hold")
+        return { work: opts.fast ? 8 : ex.workSeconds, rest: ex.restSeconds };
+      const per = opts.pacing?.exercises[ex.id];
+      return {
+        work: opts.fast
+          ? 8
+          : (per?.workSeconds ??
+            (opts.pacing?.customEnabled
+              ? opts.pacing.workSeconds
+              : ex.workSeconds)),
+        rest: opts.fast
+          ? 6
+          : (per?.restSeconds ??
+            (opts.pacing?.customEnabled
+              ? opts.pacing.restSeconds
+              : ex.restSeconds)),
+      };
+    },
+    [opts.fast, opts.pacing],
   );
-
-  const exercise: Exercise = workout.exercises[exerciseIndex];
-
-  /** Where do we go after the current set finishes? */
-  const nextStep: NextStep = useMemo(() => {
-    const ex = workout.exercises[exerciseIndex];
-    if (!ex) return null;
-    if (setNumber < ex.sets) {
-      return { exercise: ex, exerciseIndex, setNumber: setNumber + 1 };
-    }
-    if (exerciseIndex + 1 < workout.exercises.length) {
-      const nx = workout.exercises[exerciseIndex + 1];
-      return { exercise: nx, exerciseIndex: exerciseIndex + 1, setNumber: 1 };
-    }
-    return null;
-  }, [workout, exerciseIndex, setNumber]);
-
-  const beginPhase = useCallback((p: Exclude<Phase, "idle" | "complete">, ei: number, sn: number) => {
-    const ex = workout.exercises[ei];
-    const d =
-      p === "ready"
-        ? durations?.ready ?? READY_SECONDS
-        : p === "working"
-          ? durations?.work ?? pacingFor(ex)?.workSeconds ?? ex.workSeconds
-          : durations?.rest ?? pacingFor(ex)?.restSeconds ?? ex.restSeconds;
-    durationRef.current = d;
-    endsAtRef.current = Date.now() + d * 1000;
-    firedRef.current = new Set();
-    setPhase(p);
-    setExerciseIndex(ei);
-    setSetNumber(sn);
+  const customPacing =
+    !opts.fast &&
+    (!!opts.pacing?.customEnabled ||
+      perExerciseOverrideCount(
+        opts.pacing ?? ({ exercises: {} } as PaceSettings),
+      ) > 0);
+  const beginPhase = useCallback(
+    (p: "ready" | "working" | "resting", ei: number, sn: number) => {
+      const ex = sequence[ei];
+      const d =
+        p === "ready"
+          ? readySecs
+          : p === "working"
+            ? effSecs(ex).work
+            : effSecs(ex).rest;
+      stateRef.current = {
+        phase: p,
+        exerciseIndex: ei,
+        setNumber: sn,
+        paused: false,
+      };
+      durationRef.current = d;
+      endsAtRef.current = Date.now() + d * 1000;
+      firedRef.current = new Set();
+      setPhase(p);
+      setExerciseIndex(ei);
+      setSetNumber(sn);
+      setPaused(false);
+      setSecondsRemaining(d);
+      if (p === "ready")
+        speak(`${ex.name}. ${setDescription(ex, sn)}. ${repTarget(ex)}.`);
+      if (p === "working" && isPreparation(ex))
+        speak(`${ex.name}. ${ex.cues[0]}`);
+      if (p === "resting") speak("Rest.");
+    },
+    [sequence, readySecs, effSecs],
+  );
+  const complete = useCallback(() => {
+    stateRef.current.phase = "complete";
+    setPhase("complete");
+    setWorkoutEnd(Date.now());
     setPaused(false);
-    setSecondsRemaining(d);
-    if (p === "ready") {
-      const side = ex.sides?.[sn - 1] ? `, ${ex.sides[sn - 1]} side` : "";
-      speak(`${ex.name}, set ${sn} of ${ex.sets}${side}. ${ex.targetReps} reps.`);
-    } else if (p === "resting") {
-      speak("Rest.");
+    releaseWakeLock();
+  }, [releaseWakeLock]);
+  const goNext = useCallback(() => {
+    const s = stateRef.current;
+    const next = followingSet(sequence, s.exerciseIndex, s.setNumber);
+    if (!next) {
+      complete();
+      sounds.complete();
+      speak("Workout finished. Well done.");
+      return;
     }
-  }, [workout, durations, pacingFor]);
-
+    const ex = sequence[next.exerciseIndex];
+    beginPhase(
+      isPreparation(ex) ? "working" : "ready",
+      next.exerciseIndex,
+      next.setNumber,
+    );
+  }, [sequence, beginPhase, complete]);
+  const advanceFromWork = useCallback(
+    (outcome: "completed" | "skipped" = "completed") => {
+      const s = stateRef.current;
+      if (s.phase !== "working" || s.paused) return;
+      const ex = sequence[s.exerciseIndex];
+      resultsRef.current = recordSet(resultsRef.current, {
+        exerciseIndex: s.exerciseIndex,
+        setNumber: s.setNumber,
+        outcome,
+      });
+      setResults(resultsRef.current);
+      sounds.setComplete();
+      if (
+        isPreparation(ex) ||
+        !followingSet(sequence, s.exerciseIndex, s.setNumber) ||
+        (sequence[s.exerciseIndex + 1]?.kind === "cooldown" &&
+          s.setNumber === ex.sets) ||
+        effSecs(ex).rest === 0
+      )
+        goNext();
+      else beginPhase("resting", s.exerciseIndex, s.setNumber);
+    },
+    [sequence, effSecs, goNext, beginPhase],
+  );
   const start = useCallback(() => {
     unlockAudio();
-    void requestWakeLock();
+    resultsRef.current = [];
+    setResults([]);
     setWorkoutStart(Date.now());
     setWorkoutEnd(null);
-    beginPhase("ready", 0, 1);
-  }, [beginPhase, requestWakeLock]);
-
-  const advanceFromWork = useCallback(() => {
-    const s = stateRef.current;
-    const ex = workout.exercises[s.exerciseIndex];
-    sounds.setComplete();
-    const isLastSet = s.setNumber >= ex.sets;
-    const isLastExercise = s.exerciseIndex >= workout.exercises.length - 1;
-    if (isLastSet && isLastExercise) {
-      setPhase("complete");
-      setWorkoutEnd(Date.now());
-      sounds.complete();
-      speak("Workout complete. Well done.");
-      releaseWakeLock();
-    } else {
-      beginPhase("resting", s.exerciseIndex, s.setNumber);
-    }
-  }, [workout, beginPhase, releaseWakeLock]);
-
-  const advanceFromRest = useCallback(() => {
-    const s = stateRef.current;
-    const ex = workout.exercises[s.exerciseIndex];
-    sounds.start();
-    if (s.setNumber < ex.sets) {
-      beginPhase("ready", s.exerciseIndex, s.setNumber + 1);
-    } else {
-      beginPhase("ready", s.exerciseIndex + 1, 1);
-    }
-  }, [workout, beginPhase]);
-
-  // ---- ticker: recompute remaining from timestamp every 100ms ----
+    beginPhase(isPreparation(sequence[0]) ? "working" : "ready", 0, 1);
+    void requestWakeLock();
+  }, [sequence, beginPhase, requestWakeLock]);
   useEffect(() => {
     if (phase === "idle" || phase === "complete" || paused) return;
     const id = window.setInterval(() => {
       const s = stateRef.current;
-      if (s.paused) return;
+      if (s.paused || s.phase === "complete" || s.phase === "idle") return;
       const remainMs = endsAtRef.current - Date.now();
-      const remainSec = Math.max(0, Math.ceil(remainMs / 1000));
-      setSecondsRemaining(remainSec);
-
-      const p = s.phase;
-      const ex = workout.exercises[s.exerciseIndex];
-      const fired = firedRef.current;
-
-      const fireOnce = (key: number, fn: () => void) => {
-        if (!fired.has(key)) {
-          fired.add(key);
+      const sec = Math.max(0, Math.ceil(remainMs / 1000));
+      setSecondsRemaining(sec);
+      const fire = (key: number, fn: () => void) => {
+        if (!firedRef.current.has(key)) {
+          firedRef.current.add(key);
           fn();
         }
       };
-
-      if (p === "ready") {
-        if (remainSec === 3 || remainSec === 2 || remainSec === 1) fireOnce(remainSec, () => sounds.beep());
-        if (remainMs <= 0) {
+      if (sec >= 1 && sec <= 3) fire(sec, sounds.beep);
+      if (s.phase === "resting" && sec === 10 && durationRef.current > 12)
+        fire(10, sounds.warn);
+      if (
+        s.phase === "working" &&
+        sec === Math.ceil(durationRef.current / 2) &&
+        durationRef.current >= 12
+      )
+        fire(100, sounds.halfway);
+      if (remainMs <= 0) {
+        if (s.phase === "ready") {
           sounds.start();
-          const d = durations?.work ?? pacingFor(ex)?.workSeconds ?? ex.workSeconds;
-          durationRef.current = d;
-          endsAtRef.current = Date.now() + d * 1000;
-          firedRef.current = new Set();
-          setPhase("working");
-          setSecondsRemaining(d);
-        }
-      } else if (p === "working") {
-        const total = durations?.work ?? pacingFor(ex)?.workSeconds ?? ex.workSeconds;
-        // halfway marker — distinct double-tone, only for sets long enough
-        if (total >= 12) {
-          const half = Math.ceil(total / 2);
-          if (remainSec === half) fireOnce(300, () => sounds.halfway());
-        }
-        // final 3 seconds countdown
-        if (remainSec <= 3 && remainSec >= 1 && total > 4) fireOnce(100 + remainSec, () => sounds.beep());
-        if (remainMs <= 0) {
-          // use functional advance to avoid stale closure; call via timeout to stay out of interval
-          window.setTimeout(() => advanceFromWork(), 0);
-        }
-      } else if (p === "resting") {
-        const total = durations?.rest ?? pacingFor(ex)?.restSeconds ?? ex.restSeconds;
-        if (remainSec === 10 && total > 12) fireOnce(10, () => sounds.warn());
-        if (remainSec <= 3 && remainSec >= 1) fireOnce(200 + remainSec, () => sounds.beep());
-        if (remainMs <= 0) {
-          window.setTimeout(() => advanceFromRest(), 0);
-        }
+          beginPhase("working", s.exerciseIndex, s.setNumber);
+        } else if (s.phase === "working") advanceFromWork();
+        else goNext();
       }
     }, 100);
     return () => window.clearInterval(id);
-  }, [phase, paused, workout, durations, pacingFor, advanceFromWork, advanceFromRest]);
-
-  // ---- controls ----
+  }, [phase, paused, beginPhase, advanceFromWork, goNext]);
   const pause = useCallback(() => {
-    if (stateRef.current.paused) return;
+    const s = stateRef.current;
+    if (s.paused || ["idle", "complete"].includes(s.phase)) return;
     pausedRemainingRef.current = Math.max(0, endsAtRef.current - Date.now());
+    s.paused = true;
     setPaused(true);
+    cancelVoice();
   }, []);
-
   const resume = useCallback(() => {
+    if (!stateRef.current.paused) return;
     unlockAudio();
-    void requestWakeLock();
     endsAtRef.current = Date.now() + pausedRemainingRef.current;
+    stateRef.current.paused = false;
     setPaused(false);
+    void requestWakeLock();
   }, [requestWakeLock]);
-
   const togglePause = useCallback(() => {
     if (stateRef.current.paused) resume();
     else pause();
   }, [pause, resume]);
-
-  /** Finish current work set early -> go to rest (or complete). */
-  const finishSetEarly = useCallback(() => {
-    if (stateRef.current.phase !== "working" || stateRef.current.paused) return;
-    advanceFromWork();
-  }, [advanceFromWork]);
-
-  /** Skip forward: work->rest, ready->work, rest->next ready. */
+  const finishSetEarly = useCallback(
+    () => advanceFromWork("completed"),
+    [advanceFromWork],
+  );
   const skip = useCallback(() => {
     const s = stateRef.current;
     if (s.paused) return;
     cancelVoice();
-    if (s.phase === "working") advanceFromWork();
+    if (s.phase === "working") advanceFromWork("skipped");
     else if (s.phase === "ready") {
       sounds.start();
-      const ex = workout.exercises[s.exerciseIndex];
-      const d = durations?.work ?? pacingFor(ex)?.workSeconds ?? ex.workSeconds;
-      durationRef.current = d;
-      endsAtRef.current = Date.now() + d * 1000;
-      firedRef.current = new Set();
-      setPhase("working");
-      setSecondsRemaining(d);
-    } else if (s.phase === "resting") advanceFromRest();
-  }, [workout, durations, pacingFor, advanceFromWork, advanceFromRest]);
-
-  /** Add time to the current rest (e.g. "+15s" when you need longer). */
-  const extendRest = useCallback((extraSeconds: number) => {
+      beginPhase("working", s.exerciseIndex, s.setNumber);
+    } else if (s.phase === "resting") goNext();
+  }, [advanceFromWork, beginPhase, goNext]);
+  const skipFinisher = useCallback(() => {
+    const s = stateRef.current;
+    const next = followingSet(sequence, s.exerciseIndex, s.setNumber);
+    const index = sequence[s.exerciseIndex].optional
+      ? s.exerciseIndex
+      : s.phase === "resting" && next && sequence[next.exerciseIndex].optional
+        ? next.exerciseIndex
+        : -1;
+    if (index < 0) return;
+    cancelVoice();
+    resultsRef.current = recordSet(resultsRef.current, {
+      exerciseIndex: index,
+      setNumber: 1,
+      outcome: "skipped",
+    });
+    setResults(resultsRef.current);
+    const after = sequence[index + 1];
+    if (after)
+      beginPhase(isPreparation(after) ? "working" : "ready", index + 1, 1);
+    else complete();
+  }, [sequence, beginPhase, complete]);
+  const skipPreparation = useCallback(() => {
+    const s = stateRef.current;
+    const kind = sequence[s.exerciseIndex].kind;
+    if (kind !== "warmup" && kind !== "cooldown") return;
+    cancelVoice();
+    let index = s.exerciseIndex;
+    while (index < sequence.length && sequence[index].kind === kind) {
+      resultsRef.current = recordSet(resultsRef.current, {
+        exerciseIndex: index,
+        setNumber: 1,
+        outcome: "skipped",
+      });
+      index++;
+    }
+    setResults(resultsRef.current);
+    if (index < sequence.length)
+      beginPhase(
+        isPreparation(sequence[index]) ? "working" : "ready",
+        index,
+        1,
+      );
+    else complete();
+  }, [sequence, beginPhase, complete]);
+  const extendRest = useCallback((seconds: number) => {
     if (stateRef.current.phase !== "resting" || stateRef.current.paused) return;
-    endsAtRef.current += extraSeconds * 1000;
-    durationRef.current += extraSeconds;
-    setSecondsRemaining(Math.max(0, Math.ceil((endsAtRef.current - Date.now()) / 1000)));
+    endsAtRef.current += seconds * 1000;
+    durationRef.current += seconds;
+    setSecondsRemaining(
+      Math.max(0, Math.ceil((endsAtRef.current - Date.now()) / 1000)),
+    );
   }, []);
-
-  /** Go back one set (or to last set of previous exercise). */
   const previous = useCallback(() => {
     const s = stateRef.current;
-    if (s.paused) return;
-    if (s.phase === "idle" || s.phase === "complete") return;
+    if (s.paused || ["idle", "complete"].includes(s.phase)) return;
+    const ei =
+      s.setNumber > 1 ? s.exerciseIndex : Math.max(0, s.exerciseIndex - 1);
+    const sn =
+      s.setNumber > 1
+        ? s.setNumber - 1
+        : s.exerciseIndex > 0
+          ? sequence[ei].sets
+          : 1;
+    resultsRef.current = resultsRef.current.filter(
+      (r) =>
+        r.exerciseIndex < ei || (r.exerciseIndex === ei && r.setNumber < sn),
+    );
+    setResults(resultsRef.current);
     cancelVoice();
-    if (s.setNumber > 1) {
-      beginPhase("ready", s.exerciseIndex, s.setNumber - 1);
-    } else if (s.exerciseIndex > 0) {
-      const prev = workout.exercises[s.exerciseIndex - 1];
-      beginPhase("ready", s.exerciseIndex - 1, prev.sets);
-    } else {
-      beginPhase("ready", 0, 1);
-    }
-  }, [workout, beginPhase]);
-
+    beginPhase(isPreparation(sequence[ei]) ? "working" : "ready", ei, sn);
+  }, [sequence, beginPhase]);
   const endWorkout = useCallback(() => {
     cancelVoice();
-    setPhase("complete");
-    setWorkoutEnd(Date.now());
-    releaseWakeLock();
-  }, [releaseWakeLock]);
-
+    complete();
+  }, [complete]);
   const reset = useCallback(() => {
     cancelVoice();
     releaseWakeLock();
+    stateRef.current = {
+      phase: "idle",
+      exerciseIndex: 0,
+      setNumber: 1,
+      paused: false,
+    };
     setPhase("idle");
     setExerciseIndex(0);
     setSetNumber(1);
@@ -351,8 +382,9 @@ export function useWorkoutController(workout: Workout, opts: ControllerOptions =
     setWorkoutStart(null);
     setWorkoutEnd(null);
     setSecondsRemaining(0);
+    resultsRef.current = [];
+    setResults([]);
   }, [releaseWakeLock]);
-
   const toggleMute = useCallback(() => {
     setMutedState((m) => {
       setAudioMuted(!m);
@@ -360,69 +392,64 @@ export function useWorkoutController(workout: Workout, opts: ControllerOptions =
       return !m;
     });
   }, []);
-
   const toggleVoice = useCallback(() => {
     const next = !isVoiceOn();
     saveVoiceOn(next);
     setVoiceEnabled(next);
   }, []);
-
-  // keyboard shortcuts (desktop)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (
+        (e.target as HTMLElement)?.closest(
+          'input,textarea,select,[role="dialog"]',
+        )
+      )
+        return;
       if (e.code === "Space") {
         e.preventDefault();
-        const s = stateRef.current;
-        if (s.phase !== "idle" && s.phase !== "complete") togglePause();
-      } else if (e.key === "n" || e.key === "N") skip();
-      else if (e.key === "f" || e.key === "F") finishSetEarly();
-      else if (e.key === "p" || e.key === "P") previous();
-      else if (e.key === "m" || e.key === "M") toggleMute();
-      else if (e.key === "v" || e.key === "V") toggleVoice();
+        togglePause();
+      } else if (e.key.toLowerCase() === "n") skip();
+      else if (e.key.toLowerCase() === "f") finishSetEarly();
+      else if (e.key.toLowerCase() === "p") previous();
+      else if (e.key.toLowerCase() === "m") toggleMute();
+      else if (e.key.toLowerCase() === "v") toggleVoice();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [togglePause, skip, finishSetEarly, previous, toggleMute, toggleVoice]);
-
-  const totalDuration = durationRef.current || 1;
-  const elapsed = totalDuration - secondsRemaining;
-  const progress = Math.min(1, Math.max(0, elapsed / totalDuration));
-
-  const completedSetsTotal = useMemo(() => {
-    let n = 0;
-    for (let i = 0; i < exerciseIndex; i++) n += workout.exercises[i].sets;
-    if (phase === "complete") {
-      n += workout.exercises[exerciseIndex]?.sets ?? 0;
-    } else if (phase !== "idle") {
-      n += setNumber - 1;
-      if (phase === "resting") n += 1; // just finished this set
-    }
-    return n;
-  }, [workout, exerciseIndex, setNumber, phase]);
-
-  const allSetsTotal = useMemo(
-    () => workout.exercises.reduce((a, e) => a + e.sets, 0),
-    [workout]
+  const next = followingSet(sequence, exerciseIndex, setNumber);
+  const nextStep: NextStep = next
+    ? { ...next, exercise: sequence[next.exerciseIndex] }
+    : null;
+  const stats = completionStats(sequence, results);
+  const requiredComplete = sequence.every(
+    (ex, i) =>
+      isPreparation(ex) ||
+      ex.optional ||
+      results.filter((r) => r.exerciseIndex === i && r.outcome === "completed")
+        .length === ex.sets,
   );
-
+  const totalDuration = durationRef.current || 1;
   return {
     phase,
     paused,
-    exercise,
+    exercise: sequence[exerciseIndex],
     exerciseIndex,
     setNumber,
     secondsRemaining,
     totalDuration,
-    progress,
+    progress: Math.min(
+      1,
+      Math.max(0, (totalDuration - secondsRemaining) / totalDuration),
+    ),
     nextStep,
     muted,
     voiceEnabled,
     workoutStart,
     workoutEnd,
-    completedSetsTotal,
-    allSetsTotal,
+    completedSetsTotal: stats.completedSets,
+    completedExercisesTotal: stats.completedExercises,
+    allSetsTotal: stats.allSets,
     readySecs,
     customPacing,
     effSecs,
@@ -433,12 +460,16 @@ export function useWorkoutController(workout: Workout, opts: ControllerOptions =
     finishSetEarly,
     extendRest,
     skip,
+    skipFinisher,
+    skipPreparation,
     previous,
     endWorkout,
     reset,
     toggleMute,
     toggleVoice,
+    sequence,
+    results,
+    requiredComplete,
   };
 }
-
 export type WorkoutController = ReturnType<typeof useWorkoutController>;

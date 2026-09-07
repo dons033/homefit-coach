@@ -1,3 +1,4 @@
+import { LOWER_BODY_CATALOG } from "./lower-body-catalog";
 /* Exercise catalog — the ONE place to add a new movement or variant.
  *
  * MODEL (long-run: hundreds of moves, mix-and-match days, infinite programs):
@@ -39,9 +40,11 @@ export type Variant = {
   formImages?: { start: string; end: string };
   /** Condensed reference steps for the Form modal. */
   dbSteps?: string[];
+  avoid?: string[];
 };
 
 export type ExerciseInfo = {
+  timed?: boolean;
   id: string;
   name: string;
   shortName: string;
@@ -55,12 +58,16 @@ export type ExerciseInfo = {
 const standard = (
   cues: string[],
   animationId: string,
-  extra: Partial<Variant> & { formImages: { start: string; end: string }; dbSteps: string[] }
+  extra: Partial<Variant> & {
+    formImages: { start: string; end: string };
+    dbSteps: string[];
+  },
 ): Record<string, Variant> => ({
   standard: { id: "standard", label: "Standard", cues, animationId, ...extra },
 });
 
 export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
+  ...LOWER_BODY_CATALOG,
   "bench-press": {
     id: "bench-press",
     name: "Dumbbell Bench Press",
@@ -73,7 +80,10 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         id: "bench",
         label: "Bench",
         animationId: "bench-press",
-        formImages: { start: "/form/bench-press/0.jpg", end: "/form/bench-press/1.jpg" },
+        formImages: {
+          start: "/form/bench-press/0.jpg",
+          end: "/form/bench-press/1.jpg",
+        },
         dbSteps: [
           "Dumbbells just outside the chest, forearms vertical, elbow angle ≈ 90°.",
           "Press up in a slight inward arc, squeeze 1s at the top.",
@@ -92,7 +102,10 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         animationId: "bench-press",
         equipment: ["dumbbells"],
         notes: "No bench needed. The floor stops your range at torso level.",
-        formImages: { start: "/form/bench-press-floor/0.jpg", end: "/form/bench-press-floor/1.jpg" },
+        formImages: {
+          start: "/form/bench-press-floor/0.jpg",
+          end: "/form/bench-press-floor/1.jpg",
+        },
         dbSteps: [
           "Knees bent, bells start extended overhead.",
           "Lower until upper arms touch the floor. Tuck elbows for triceps, flare slightly for chest.",
@@ -123,13 +136,16 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
       ],
       "one-arm-row",
       {
-        formImages: { start: "/form/one-arm-row/0.jpg", end: "/form/one-arm-row/1.jpg" },
+        formImages: {
+          start: "/form/one-arm-row/0.jpg",
+          end: "/form/one-arm-row/1.jpg",
+        },
         dbSteps: [
           "Torso parallel to the floor, back flat, working arm hangs straight.",
           "Pull to the side of the chest, elbow past the ribs, squeeze.",
           "Lower straight down. Torso stays still.",
         ],
-      }
+      },
     ),
   },
   "shoulder-press": {
@@ -148,13 +164,16 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
       ],
       "shoulder-press",
       {
-        formImages: { start: "/form/shoulder-press/0.jpg", end: "/form/shoulder-press/1.jpg" },
+        formImages: {
+          start: "/form/shoulder-press/0.jpg",
+          end: "/form/shoulder-press/1.jpg",
+        },
         dbSteps: [
           "Bells at shoulder height outside the shoulders, palms forward.",
           "Press until the bells nearly touch overhead.",
           "Pause briefly, lower with control.",
         ],
-      }
+      },
     ),
   },
   "lateral-raise": {
@@ -173,13 +192,16 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
       ],
       "lateral-raise",
       {
-        formImages: { start: "/form/lateral-raise/0.jpg", end: "/form/lateral-raise/1.jpg" },
+        formImages: {
+          start: "/form/lateral-raise/0.jpg",
+          end: "/form/lateral-raise/1.jpg",
+        },
         dbSteps: [
           "Bells at your sides, slight fixed elbow bend.",
           "Raise in a wide arc to just above parallel, hands tilted like pouring water.",
           "Pause 1s, lower slowly. No shrug, no swing.",
         ],
-      }
+      },
     ),
   },
   "biceps-curl": {
@@ -194,7 +216,10 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         id: "standard",
         label: "Standard",
         animationId: "biceps-curl",
-        formImages: { start: "/form/biceps-curl/0.jpg", end: "/form/biceps-curl/1.jpg" },
+        formImages: {
+          start: "/form/biceps-curl/0.jpg",
+          end: "/form/biceps-curl/1.jpg",
+        },
         dbSteps: [
           "Arms hang, palms forward, elbows pinned at your sides.",
           "Curl to shoulder level, squeeze briefly at the top.",
@@ -211,8 +236,12 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
         id: "hammer",
         label: "Hammer",
         animationId: "biceps-curl-hammer",
-        notes: "Neutral grip biases brachialis + forearms. Same hinge, turned handle.",
-        formImages: { start: "/form/biceps-curl-hammer/0.jpg", end: "/form/biceps-curl-hammer/1.jpg" },
+        notes:
+          "Neutral grip biases brachialis + forearms. Same hinge, turned handle.",
+        formImages: {
+          start: "/form/biceps-curl-hammer/0.jpg",
+          end: "/form/biceps-curl-hammer/1.jpg",
+        },
         dbSteps: [
           "Neutral grip — palms face your thighs, plates face forward.",
           "Curl to chest height keeping elbows back.",
@@ -243,13 +272,16 @@ export const EXERCISE_CATALOG: Record<string, ExerciseInfo> = {
       ],
       "triceps-extension",
       {
-        formImages: { start: "/form/triceps-extension/0.jpg", end: "/form/triceps-extension/1.jpg" },
+        formImages: {
+          start: "/form/triceps-extension/0.jpg",
+          end: "/form/triceps-extension/1.jpg",
+        },
         dbSteps: [
           "Bell overhead, both hands, arms fully extended.",
           "Lower behind the head until forearms near the biceps. Upper arms still.",
           "Press back overhead. No elbow flare.",
         ],
-      }
+      },
     ),
   },
 };
@@ -275,7 +307,10 @@ export function getExerciseInfo(id: string): ExerciseInfo {
         id: "standard",
         label: "Standard",
         animationId: id,
-        cues: ["Move slowly through full range.", "Keep core braced, breathe steadily."],
+        cues: [
+          "Move slowly through full range.",
+          "Keep core braced, breathe steadily.",
+        ],
       },
     },
   };
@@ -290,6 +325,6 @@ export function findAlternatives(id: string): ExerciseInfo[] {
     (e) =>
       e.id !== id &&
       e.muscles[0] === primary &&
-      e.equipment.some((eq) => info.equipment.includes(eq))
+      e.equipment.some((eq) => info.equipment.includes(eq)),
   );
 }

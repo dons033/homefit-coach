@@ -13,23 +13,25 @@ const store = new Map<string, string>();
   },
 };
 
-import {
-  upperBodyA,
-  withVariant,
-  estimateMinutes,
-  setLabel,
-} from "../workout";
+import { upperBodyA, withVariant, estimateMinutes, setLabel } from "../workout";
 import {
   DEFAULT_PACING,
   loadPacing,
   savePacing,
   perExerciseOverrideCount,
 } from "../pacing";
-import { getExerciseInfo, findAlternatives, EXERCISE_CATALOG } from "../exercise-catalog";
+import {
+  getExerciseInfo,
+  findAlternatives,
+  EXERCISE_CATALOG,
+} from "../exercise-catalog";
 
 // 1. Catalog integrity: every exercise has a resolvable default variant.
 for (const info of Object.values(EXERCISE_CATALOG)) {
-  assert.ok(info.variants[info.defaultVariant], `${info.id} default variant resolves`);
+  assert.ok(
+    info.variants[info.defaultVariant],
+    `${info.id} default variant resolves`,
+  );
   for (const v of Object.values(info.variants)) {
     assert.ok(v.cues.length >= 2, `${info.id}.${v.id} has cues`);
     assert.ok(v.animationId, `${info.id}.${v.id} has animationId`);
@@ -44,10 +46,14 @@ const totalSets = upperBodyA.exercises.reduce((a, e) => a + e.sets, 0);
 assert.equal(totalSets, 21);
 assert.equal(upperBodyA.focus, "lean");
 
-// 3. Estimate: programmed ≈ 40-42 min; custom pacing shrinks it.
+// 3. Estimate includes six minutes of warm-up and cool-down.
 const prog = estimateMinutes(upperBodyA);
-assert.ok(prog >= 38 && prog <= 44, `programmed estimate ${prog} in range`);
-const custom = estimateMinutes(upperBodyA, { workSeconds: 20, restSeconds: 20, readySeconds: 3 });
+assert.equal(prog, 48);
+const custom = estimateMinutes(upperBodyA, {
+  workSeconds: 20,
+  restSeconds: 20,
+  readySeconds: 3,
+});
 assert.ok(custom < prog, `custom ${custom} < programmed ${prog}`);
 // Per-exercise override beats global.
 const per = estimateMinutes(upperBodyA, {
@@ -73,7 +79,7 @@ assert.equal(bogus.exercises[0].variantId, "bench");
 const row = upperBodyA.exercises[1];
 assert.deepEqual(
   [1, 2, 3, 4, 5, 6].map((n) => setLabel(row, n)),
-  ["Left", "Right", "Left", "Right", "Left", "Right"]
+  ["Left", "Right", "Left", "Right", "Left", "Right"],
 );
 assert.equal(setLabel(upperBodyA.exercises[0], 1), "");
 

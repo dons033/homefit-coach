@@ -1,3 +1,4 @@
+import { upperWarmup, upperCooldown, lowerCooldown } from "./preparation";
 import { EXERCISE_CATALOG, getExerciseInfo } from "./exercise-catalog";
 
 export type Exercise = {
@@ -16,6 +17,9 @@ export type Exercise = {
   /** For unilateral work: alternate labels per set, e.g. Left/Right */
   sides?: string[];
   cues: string[];
+  kind?: "reps" | "hold" | "warmup" | "cooldown";
+  optional?: boolean;
+  repsPerSide?: number;
 };
 
 export type Workout = {
@@ -23,7 +27,12 @@ export type Workout = {
   name: string;
   tagline: string;
   focus: ProgramFocus;
-  /** Reserved for later: optional seconds of easy marching before set 1. Unused in v1. */
+  warmup?: Exercise[];
+  cooldown?: Exercise[];
+  repBased?: boolean;
+  purpose?: string;
+  equipment?: string[];
+  /** Guided warm-up duration (kept for older consumers). */
   warmupSeconds?: number;
   exercises: Exercise[];
 };
@@ -31,7 +40,12 @@ export type Workout = {
 /* Program focuses — one set of basics, programmed many ways.
  * A mass day and an endurance day can both contain bench press;
  * the focus decides reps, rest, and intent. */
-export type ProgramFocus = "mass" | "lean" | "strength" | "endurance" | "athleticism";
+export type ProgramFocus =
+  | "mass"
+  | "lean"
+  | "strength"
+  | "endurance"
+  | "athleticism";
 
 export const FOCUS_PRESETS: Record<
   ProgramFocus,
@@ -72,7 +86,10 @@ export const FOCUS_PRESETS: Record<
 /** One line per movement. Programming (sets/reps/timers) lives here;
  *  names + cues + figures come from the catalog, so reusing a move —
  *  in any focus, any variant — is one line. */
-type WorkoutEntry = {
+export type WorkoutEntry = {
+  kind?: "reps" | "hold";
+  optional?: boolean;
+  repsPerSide?: number;
   exerciseId: string;
   variantId?: string;
   sets: number;
@@ -82,7 +99,10 @@ type WorkoutEntry = {
   sides?: string[];
 };
 
-function resolveVariant(info: ReturnType<typeof getExerciseInfo>, variantId?: string) {
+function resolveVariant(
+  info: ReturnType<typeof getExerciseInfo>,
+  variantId?: string,
+) {
   return (
     (variantId && info.variants[variantId]) ||
     info.variants[info.defaultVariant] ||
@@ -106,12 +126,19 @@ function buildExercise(e: WorkoutEntry): Exercise {
     workSeconds: e.workSeconds,
     restSeconds: e.restSeconds,
     sides: e.sides,
+    kind: e.kind ?? (info.timed ? "hold" : "reps"),
+    optional: e.optional,
+    repsPerSide: e.repsPerSide,
   };
 }
 
 /** Rebuild one exercise of a workout with a different variant,
  *  keeping its programming. Powers the home-screen variant picker. */
-export function withVariant(workout: Workout, exerciseId: string, variantId: string): Workout {
+export function withVariant(
+  workout: Workout,
+  exerciseId: string,
+  variantId: string,
+): Workout {
   return {
     ...workout,
     exercises: workout.exercises.map((ex) => {
@@ -124,60 +151,245 @@ export function withVariant(workout: Workout, exerciseId: string, variantId: str
         workSeconds: ex.workSeconds,
         restSeconds: ex.restSeconds,
         sides: ex.sides,
+        kind: isPreparation(ex)
+          ? undefined
+          : (ex.kind as "reps" | "hold" | undefined),
+        optional: ex.optional,
+        repsPerSide: ex.repsPerSide,
       });
     }),
   };
 }
 
-function buildWorkout(
+export function buildWorkout(
   id: string,
   name: string,
   tagline: string,
   focus: ProgramFocus,
   entries: WorkoutEntry[],
-  warmupSeconds = 0
+  warmupSeconds = 0,
 ): Workout {
   // Warn in dev if an id has no catalog entry (still renders via fallback).
   if (typeof console !== "undefined") {
     entries.forEach((e) => {
       if (!EXERCISE_CATALOG[e.exerciseId]) {
-        console.warn(`[HomeFit] "${e.exerciseId}" not in EXERCISE_CATALOG — using placeholder.`);
+        console.warn(
+          `[HomeFit] "${e.exerciseId}" not in EXERCISE_CATALOG — using placeholder.`,
+        );
       }
     });
   }
-  return { id, name, tagline, focus, warmupSeconds, exercises: entries.map(buildExercise) };
+  return {
+    id,
+    name,
+    tagline,
+    focus,
+    warmupSeconds,
+    exercises: entries.map(buildExercise),
+  };
 }
 
-export const upperBodyA: Workout = buildWorkout(
-  "upper-body-a",
-  "Upper Body A",
-  "Strength • 6 Exercises • ~40 Minutes",
-  "lean",
+export const upperBodyA: Workout = {
+  ...buildWorkout(
+    "upper-body-a",
+    "Upper Body A",
+    "Strength • 6 Exercises • ~48 Minutes",
+    "lean",
+    [
+      // Muscle-preservation programming (GLP-1 friendly):
+      // moderate 8–12 rep range, stop 1–2 reps before failure,
+      // long rests on compounds (strength needs recovery),
+      // shorter rests on isolations to keep the session moving.
+      {
+        exerciseId: "bench-press",
+        sets: 3,
+        targetReps: 10,
+        workSeconds: 40,
+        restSeconds: 90,
+      },
+      {
+        exerciseId: "one-arm-row",
+        sets: 6, // 3 per side, alternating L/R/L/R/L/R
+        targetReps: 10,
+        workSeconds: 40,
+        restSeconds: 90,
+        sides: ["Left", "Right", "Left", "Right", "Left", "Right"],
+      },
+      {
+        exerciseId: "shoulder-press",
+        sets: 3,
+        targetReps: 10,
+        workSeconds: 40,
+        restSeconds: 90,
+      },
+      {
+        exerciseId: "lateral-raise",
+        sets: 3,
+        targetReps: 12,
+        workSeconds: 40,
+        restSeconds: 60,
+      },
+      {
+        exerciseId: "biceps-curl",
+        sets: 3,
+        targetReps: 12,
+        workSeconds: 40,
+        restSeconds: 60,
+      },
+      {
+        exerciseId: "triceps-extension",
+        sets: 3,
+        targetReps: 12,
+        workSeconds: 40,
+        restSeconds: 60,
+      },
+      // To add a move: add it to EXERCISE_CATALOG, then one line here, e.g.
+      // { exerciseId: "goblet-squat", sets: 3, targetReps: 12, workSeconds: 40, restSeconds: 60 },
+    ],
+  ),
+  warmup: upperWarmup,
+  cooldown: upperCooldown,
+  warmupSeconds: 180,
+};
+
+const lowerWarmup = [
   [
-    // Muscle-preservation programming (GLP-1 friendly):
-    // moderate 8–12 rep range, stop 1–2 reps before failure,
-    // long rests on compounds (strength needs recovery),
-    // shorter rests on isolations to keep the session moving.
-    { exerciseId: "bench-press", sets: 3, targetReps: 10, workSeconds: 40, restSeconds: 90 },
-    {
-      exerciseId: "one-arm-row",
-      sets: 6, // 3 per side, alternating L/R/L/R/L/R
-      targetReps: 10,
-      workSeconds: 40,
-      restSeconds: 90,
-      sides: ["Left", "Right", "Left", "Right", "Left", "Right"],
-    },
-    { exerciseId: "shoulder-press", sets: 3, targetReps: 10, workSeconds: 40, restSeconds: 90 },
-    { exerciseId: "lateral-raise", sets: 3, targetReps: 12, workSeconds: 40, restSeconds: 60 },
-    { exerciseId: "biceps-curl", sets: 3, targetReps: 12, workSeconds: 40, restSeconds: 60 },
-    { exerciseId: "triceps-extension", sets: 3, targetReps: 12, workSeconds: 40, restSeconds: 60 },
-    // To add a move: add it to EXERCISE_CATALOG, then one line here, e.g.
-    // { exerciseId: "goblet-squat", sets: 3, targetReps: 12, workSeconds: 40, restSeconds: 60 },
-  ]
-  // To enable a warmup later: pass seconds as 6th arg, e.g. buildWorkout(..., 60)
+    "march-in-place",
+    "March in place",
+    "March gently, lifting one knee at a time.",
+  ],
+  [
+    "bodyweight-good-morning",
+    "Bodyweight good mornings",
+    "Soft knees. Push hips back and keep your spine neutral.",
+  ],
+  [
+    "bodyweight-squat",
+    "Bodyweight squats",
+    "Keep feet planted and knees tracking over toes.",
+  ],
+  [
+    "bodyweight-reverse-lunge",
+    "Alternating reverse lunges",
+    "Step back under control. Alternate legs.",
+  ],
+  [
+    "hip-hinge",
+    "Hip hinges",
+    "Send hips back, then stand tall. Keep a modest knee bend.",
+  ],
+  [
+    "bodyweight-squat",
+    "Bodyweight squats",
+    "Move smoothly through a comfortable range.",
+  ],
+].map(
+  ([animationId, name, cue], i): Exercise => ({
+    id: `lower-warmup-${i}`,
+    name,
+    shortName: name,
+    animationId,
+    variantId: "standard",
+    sets: 1,
+    targetReps: 0,
+    workSeconds: 30,
+    restSeconds: 0,
+    kind: "warmup",
+    cues: [cue, "Breathe normally and move at an easy pace."],
+  }),
 );
 
-export const workouts: Record<string, Workout> = { "upper-body-a": upperBodyA };
+export const lowerBodyA: Workout = {
+  ...buildWorkout(
+    "lower-body-a",
+    "LOWER BODY A",
+    "Foundational strength · 18 working sets · about 37 minutes",
+    "strength",
+    [
+      {
+        exerciseId: "goblet-squat",
+        sets: 3,
+        targetReps: 10,
+        workSeconds: 45,
+        restSeconds: 60,
+      },
+      {
+        exerciseId: "romanian-deadlift",
+        sets: 3,
+        targetReps: 10,
+        workSeconds: 45,
+        restSeconds: 60,
+      },
+      {
+        exerciseId: "bulgarian-split-squat",
+        sets: 4,
+        targetReps: 8,
+        workSeconds: 45,
+        restSeconds: 45,
+        sides: ["LEFT LEG", "RIGHT LEG", "LEFT LEG", "RIGHT LEG"],
+      },
+      {
+        exerciseId: "hip-thrust",
+        variantId: "bench",
+        sets: 3,
+        targetReps: 12,
+        workSeconds: 45,
+        restSeconds: 45,
+      },
+      {
+        exerciseId: "reverse-lunge",
+        sets: 2,
+        targetReps: 16,
+        repsPerSide: 8,
+        workSeconds: 50,
+        restSeconds: 60,
+      },
+      {
+        exerciseId: "calf-raise",
+        sets: 3,
+        targetReps: 15,
+        workSeconds: 40,
+        restSeconds: 30,
+      },
+      {
+        exerciseId: "wall-sit",
+        sets: 1,
+        targetReps: 0,
+        workSeconds: 45,
+        restSeconds: 0,
+        kind: "hold",
+        optional: true,
+      },
+    ],
+    180,
+  ),
+  warmup: lowerWarmup,
+  cooldown: lowerCooldown,
+  repBased: true,
+  purpose:
+    "Foundational lower-body strength: quads, glutes, hamstrings, hip stability, and calves.",
+  equipment: ["Dumbbells", "Bench or sturdy chair", "Exercise mat"],
+};
+
+export const workouts: Record<string, Workout> = {
+  "upper-body-a": upperBodyA,
+  "lower-body-a": lowerBodyA,
+};
+
+export function repTarget(ex: Exercise): string {
+  if (ex.kind === "hold") return `${ex.workSeconds}s hold`;
+  if (isPreparation(ex)) return "Easy, controlled movement";
+  return ex.repsPerSide
+    ? `${ex.repsPerSide} per side (${ex.targetReps} total)`
+    : `${ex.targetReps} reps`;
+}
+export function setDescription(ex: Exercise, setNumber: number): string {
+  if (!ex.sides) return `Set ${setNumber} of ${ex.sets}`;
+  const side = ex.sides[setNumber - 1];
+  const total = ex.sides.filter((s) => s === side).length;
+  const current = ex.sides.slice(0, setNumber).filter((s) => s === side).length;
+  return `Set ${current} of ${total} · ${side}`;
+}
 
 export function estimateMinutes(
   w: Workout,
@@ -185,11 +397,16 @@ export function estimateMinutes(
     readySeconds?: number;
     workSeconds?: number;
     restSeconds?: number;
-    perExercise?: Record<string, { workSeconds?: number; restSeconds?: number }>;
-  }
+    perExercise?: Record<
+      string,
+      { workSeconds?: number; restSeconds?: number }
+    >;
+  },
 ): number {
   const READY = overrides?.readySeconds ?? 5;
-  let total = w.warmupSeconds ?? 0;
+  let total =
+    w.warmup?.reduce((n, e) => n + e.workSeconds, 0) ?? w.warmupSeconds ?? 0;
+  total += w.cooldown?.reduce((n, e) => n + e.workSeconds, 0) ?? 0;
   w.exercises.forEach((e, i) => {
     const per = overrides?.perExercise?.[e.id];
     const work = per?.workSeconds ?? overrides?.workSeconds ?? e.workSeconds;
@@ -205,4 +422,22 @@ export function estimateMinutes(
 export function setLabel(ex: Exercise, setNumber: number): string {
   if (ex.sides && ex.sides[setNumber - 1]) return ex.sides[setNumber - 1];
   return "";
+}
+
+export function isPreparation(ex: Exercise): boolean {
+  return ex.kind === "warmup" || ex.kind === "cooldown";
+}
+/** Fill missing preparation on older built-in snapshots without replacing custom programming. */
+export function withPreparation(workout: Workout): Workout {
+  const preset = workouts[workout.id];
+  if (
+    !preset ||
+    (workout.warmup !== undefined && workout.cooldown !== undefined)
+  )
+    return workout;
+  return {
+    ...workout,
+    warmup: workout.warmup ?? structuredClone(preset.warmup),
+    cooldown: workout.cooldown ?? structuredClone(preset.cooldown),
+  };
 }
