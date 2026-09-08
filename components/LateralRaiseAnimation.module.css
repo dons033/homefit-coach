@@ -1,0 +1,24 @@
+/* One rigid, slightly bent arm, seen through two camera projections.
+   Preserve the existing 85-degree sweep and 0/38/52/88 rep windows. */
+@keyframes raise {
+  0%, 88%, 100% { transform: rotate(-15deg); }
+  38%, 52% { transform: rotate(-100deg); }
+}
+@keyframes keepBellUpright {
+  0%, 88%, 100% { transform: rotate(15deg); }
+  38%, 52% { transform: rotate(100deg); }
+}
+.arm, .bell {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation-duration: var(--rep-dur, 4s);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-delay: var(--phase-delay, 0s);
+}
+.arm { animation-name: raise; transform: rotate(-15deg); }
+.bell { animation-name: keepBellUpright; transform: rotate(15deg); }
+.paused .arm, .paused .bell { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .arm, .bell { animation: none; }
+}

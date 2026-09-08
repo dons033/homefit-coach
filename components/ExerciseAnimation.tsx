@@ -6,6 +6,7 @@ import { Dumbbell, Plate, DumbbellV } from "./bells";
 import { RigFigure } from "./RigFigure";
 import { RIG_DEFS } from "@/lib/poses";
 import { GsapBenchAnim } from "./GsapBench";
+import { LateralRaiseAnimation } from "./LateralRaiseAnimation";
 import { LowerBodyAnimation, LOWER_ANIMATION_IDS } from "./LowerBodyAnimation";
 import rowStyles from "./RowAnimation.module.css";
 
@@ -406,50 +407,6 @@ function ShoulderPressAnim({ repSeconds = 4, paused = false, phase = null }: { r
   );
 }
 
-/* ---------------- Lateral raise: FRONT (plates) + SIDE profile (plate end-on) ----------------
- * Full ROM: rest hangs at the sides, top ≈ 100° abduction (measured).
- * The old figure hovered half-raised forever — it never came down.
- * The old second view (top-down) read as a broken front view, so the pair
- * is front + side now: the side arm is a rigid rotation about the shoulder
- * (CSS rotate, bell inside the group so it tracks), 0 → 95°. */
-function LateralRaiseAnim() {
-  const pivot: CSSProperties = { transformBox: "view-box", transformOrigin: "100px 62px" };
-  const front = (
-    <>
-      <StandingFigure />
-      <path className="hf-traj" d="M84 106 Q60 80 53 55" />
-      <path className="hf-traj" d="M116 106 Q140 80 147 55" />
-      <g className="hf-anim-raiseFL" style={pivot}>
-        <line x1={100} y1={62} x2={88} y2={108} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Plate x={87} y={113} />
-      </g>
-      <g className="hf-anim-raiseFR" style={pivot}>
-        <line x1={100} y1={62} x2={112} y2={108} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-        <Plate x={113} y={113} />
-      </g>
-    </>
-  );
-  const side = (
-    <>
-      <StandingSide />
-      {/* Ghost at the raised extreme (95° about the shoulder); arm straight —
-       * the "slight bend" reads as a wrong-way kink at this size. */}
-      <g className="hf-ghost" fill="none" stroke={BLUE} strokeWidth={3} strokeLinecap="round" aria-hidden="true">
-        <path d="M76 56 L26 50" />
-        <circle cx={20} cy={49} r={9} />
-      </g>
-      <path className="hf-traj" d="M74 112 A56 56 0 0 1 20 49" />
-      <g className="hf-mover hf-raise-side" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M76 56 L74 106" />
-        <g stroke="none"><Plate x={74} y={112} s={0.9} /></g>
-      </g>
-      <circle cx={76} cy={56} r={4} fill={BLUE} stroke="#0a1120" strokeWidth={1.5} />
-      <SideHead />
-    </>
-  );
-  return <Views aLabel="Front" bLabel="Side" a={front} b={side} />;
-}
-
 /* ---------------- Biceps curls: FRONT (bars/plates) + SIDE rig (plate) ----------------
  * Front: elbows pinned at the sides (static INK upper arms); the forearm
  * rises straight up — a front view foreshortens the arc, so the hand tracks
@@ -784,7 +741,7 @@ export function LabScrub({ exerciseId, phase, repSeconds }: { exerciseId: string
       {exerciseId === "bench-press" && <BenchPressAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "one-arm-row" && <RowAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "shoulder-press" && <ShoulderPressAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
-      {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
+      {exerciseId === "lateral-raise" && <LateralRaiseAnimation repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "biceps-curl" && <CurlViews hammer={false} repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "biceps-curl-hammer" && <CurlViews hammer={true} repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "triceps-extension" && <TricepsAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
@@ -870,7 +827,7 @@ export function ExerciseAnimation({
       {exerciseId === "bench-press" && <BenchPressAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "one-arm-row" && <RowAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "shoulder-press" && <ShoulderPressAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
-      {exerciseId === "lateral-raise" && <LateralRaiseAnim />}
+      {exerciseId === "lateral-raise" && <LateralRaiseAnimation repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "biceps-curl" && <CurlViews hammer={false} repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "biceps-curl-hammer" && <CurlViews hammer={true} repSeconds={repSeconds} paused={paused} phase={phase} />}
       {exerciseId === "triceps-extension" && <TricepsAnim repSeconds={repSeconds} paused={paused} phase={phase} />}
